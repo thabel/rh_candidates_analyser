@@ -6,7 +6,7 @@ use App\Entity\Admin;
 use App\Repository\AdminRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class AuthService
 {
@@ -15,11 +15,19 @@ class AuthService
     public function __construct(
         private AdminRepository $adminRepository,
         private EntityManagerInterface $entityManager,
-        private SessionInterface $session
+        private RequestStack $requestStack
     ) {
         $this->factory = new PasswordHasherFactory([
             'common' => ['algorithm' => 'bcrypt'],
         ]);
+    }
+
+    /**
+     * Obtenir la session courante
+     */
+    private function getSession()
+    {
+        return $this->requestStack->getSession();
     }
 
     /**
@@ -39,8 +47,9 @@ class AuthService
         }
 
         // Stocker dans la session
-        $this->session->set('admin_id', $admin->getId());
-        $this->session->set('admin_username', $admin->getUsername());
+        $session = $this->getSession();
+        $session->set('admin_id', $admin->getId());
+        $session->set('admin_username', $admin->getUsername());
 
         return true;
     }
@@ -50,7 +59,8 @@ class AuthService
      */
     public function isLoggedIn(): bool
     {
-        return $this->session->has('admin_id');
+        $session = $this->getSession();
+        return $session->has('admin_id');
     }
 
     /**
@@ -62,7 +72,8 @@ class AuthService
             return null;
         }
 
-        return $this->adminRepository->find($this->session->get('admin_id'));
+        $session = $this->getSession();
+        return $this->adminRepository->find($session->get('admin_id'));
     }
 
     /**
@@ -70,8 +81,9 @@ class AuthService
      */
     public function logout(): void
     {
-        $this->session->remove('admin_id');
-        $this->session->remove('admin_username');
+        $session = $this->getSession();
+        $session->remove('admin_id');
+        $session->remove('admin_username');
     }
 
     /**
