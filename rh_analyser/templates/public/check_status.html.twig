@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérifier Mon Statut - Recrutement</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        header h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        header a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .submit-btn:hover { background: #764ba2; }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        .result.pending {
+            border-left-color: #ffc107;
+        }
+        .result.analyzed {
+            border-left-color: #28a745;
+        }
+        .result h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .result p {
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .score {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .analysis-item {
+            background: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .positive { border-left: 3px solid #28a745; }
+        .negative { border-left: 3px solid #dc3545; }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .alert.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 Vérifier Mon Statut</h1>
+            <a href="{{ path('app_public_home') }}">← Retour à l'accueil</a>
+        </header>
+
+        <div class="content">
+            {% for message in app.flashes('warning') %}
+                <div class="alert warning">⚠️ {{ message }}</div>
+            {% endfor %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="email">Entrez votre email:</label>
+                    <input type="email" id="email" name="email" required value="{{ email }}">
+                </div>
+                <button type="submit" class="submit-btn">Rechercher</button>
+            </form>
+
+            {% if candidate %}
+                <div class="result {{ candidate.status }}">
+                    <h3>{{ candidate.firstName }} {{ candidate.lastName }}</h3>
+                    <p><strong>Email:</strong> {{ candidate.email }}</p>
+                    <p><strong>Statut:</strong> 
+                        {% if candidate.status == 'pending' %}
+                            ⏳ En attente d'analyse
+                        {% elseif candidate.status == 'analyzing' %}
+                            ⚙️ Analyse en cours...
+                        {% else %}
+                            ✅ Analysée
+                        {% endif %}
+                    </p>
+                    <p><strong>Soumise le:</strong> {{ candidate.submittedAt.format('d/m/Y H:i') }}</p>
+
+                    {% if candidate.score is not null %}
+                        <div class="score">{{ candidate.score }}/100</div>
+
+                        {% if candidate.analysisResult %}
+                            <p><strong>📊 Résumé:</strong></p>
+                            <div class="analysis-item">
+                                {{ candidate.analysisResult.summary }}
+                            </div>
+
+                            <p><strong>✅ Points forts:</strong></p>
+                            {% for point in candidate.analysisResult.positives %}
+                                <div class="analysis-item positive">• {{ point }}</div>
+                            {% endfor %}
+
+                            <p><strong>⚠️ Points à améliorer:</strong></p>
+                            {% for point in candidate.analysisResult.negatives %}
+                                <div class="analysis-item negative">• {{ point }}</div>
+                            {% endfor %}
+
+                            <p><strong>Analysée le:</strong> {{ candidate.analyzedAt.format('d/m/Y H:i') }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

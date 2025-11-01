@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Admin - RH</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 24px; }
+        header .logout {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            font-size: 14px;
+        }
+        header .logout:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+        }
+        .candidates-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .candidates-table h2 {
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f5f5f5;
+            padding: 15px;
+            text-align: left;
+            color: #333;
+            font-weight: 600;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-analyzing {
+            background: #cfe2ff;
+            color: #084298;
+        }
+        .status-analyzed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+        .score {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .action-btn {
+            padding: 8px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .action-btn:hover {
+            background: #764ba2;
+        }
+        .action-btn.delete {
+            background: #dc3545;
+        }
+        .action-btn.delete:hover {
+            background: #c82333;
+        }
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 12px;
+            }
+            td, th {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 Tableau de Bord RH</h1>
+        <a href="{{ path('admin_logout') }}" class="logout">🚪 Déconnexion</a>
+    </header>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">Total Candidats</div>
+                <div class="number">{{ totalCandidates }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">En Attente</div>
+                <div class="number" style="color: #ffc107;">{{ pendingCount }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Analysés</div>
+                <div class="number" style="color: #28a745;">{{ analyzedCount }}</div>
+            </div>
+        </div>
+
+        <div class="candidates-table">
+            <h2>📋 Candidatures</h2>
+            {% if candidates|length > 0 %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Statut</th>
+                            <th>Score</th>
+                            <th>Soumise</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidates %}
+                            <tr>
+                                <td>{{ candidate.firstName }} {{ candidate.lastName }}</td>
+                                <td>{{ candidate.email }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ candidate.status }}">
+                                        {% if candidate.status == 'pending' %}
+                                            ⏳ En attente
+                                        {% elseif candidate.status == 'analyzing' %}
+                                            ⚙️ Analyse...
+                                        {% else %}
+                                            ✅ Analysée
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if candidate.score %}
+                                        <span class="score">{{ candidate.score }}/100</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ candidate.submittedAt.format('d/m/Y') }}</td>
+                                <td>
+                                    <a href="{{ path('admin_view_candidate', {id: candidate.id}) }}" class="action-btn">
+                                        👁️ Voir
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty">
+                    Aucune candidature pour le moment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
