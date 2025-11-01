@@ -1,37 +1,25 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.2-fpm
 
-# Install necessary system packages and PHP extensions
-RUN apk add --no-cache \
+# Installation des extensions PHP nécessaires
+RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libzip-dev \
-    curl \
-    postgresql-dev \
-    && docker-php-ext-install \
-    pdo_pgsql \
-    zip \
-    && rm -rf /var/cache/apk/*
+    && docker-php-ext-install pdo pdo_mysql zip
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Installation de Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy application code
+# Copier les fichiers de l'application
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+# Installer les dépendances Symfony avec APP_ENV=prod pour éviter de charger les bundles dev
+RUN APP_ENV=prod composer install --no-interaction --optimize-autoloader --no-dev
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html && \
-    chmod -R 755 /var/www/html && \
-    chmod -R 777 /var/www/html/var
-
-# Create cache directory
-RUN mkdir -p /var/www/html/var/cache && \
-    chmod -R 777 /var/www/html/var/cache
+# Permissions
+RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 9000
 
