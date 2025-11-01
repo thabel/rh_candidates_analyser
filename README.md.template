@@ -1,0 +1,339 @@
+# Candidate Scoring Backend - Symfony + Google Gemini
+
+A production-ready Symfony 7 REST API backend for automatic candidate scoring using Google Gemini AI.
+
+## 🎯 Features
+
+- **AI-Powered Analysis**: Uses Google Gemini 1.5 Pro to analyze CVs against job descriptions
+- **Structured Output**: Returns consistent JSON response with scores and analysis
+- **Full Docker Support**: Complete Docker Compose setup for development and production
+- **CORS Enabled**: Ready for frontend integration
+- **Input Validation**: Comprehensive request validation with meaningful error messages
+- **Exception Handling**: Professional error handling with detailed responses
+- **Best Practices**: Follows Symfony conventions (Services, DTOs, Dependency Injection)
+
+## 📋 Requirements
+
+- Docker and Docker Compose
+- Google Gemini API Key (get one at [Google AI Studio](https://aistudio.google.com/app/apikey))
+
+## 🚀 Quick Start
+
+### 1. Setup the Project
+
+```bash
+bash setup.sh
+```
+
+This script will:
+- Create a Symfony 7.0 project
+- Install all required dependencies
+- Generate all application code (Controllers, Services, DTOs)
+- Configure CORS
+- Set up Docker configuration files
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+nano .env  # Edit and add your GEMINI_API_KEY
+```
+
+### 3. Start Docker Containers
+
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+### 4. Verify Installation
+
+```bash
+# Test health endpoint
+curl -X GET http://localhost:8000/api/health
+
+# Response:
+# {"status":"ok"}
+```
+
+## 📡 API Endpoints
+
+### Health Check
+
+**GET** `/api/health`
+
+Simple health check endpoint.
+
+**Response (200):**
+```json
+{
+  "status": "ok"
+}
+```
+
+### Analyze Candidate
+
+**POST** `/api/analyze-candidate`
+
+Analyzes a candidate's CV against a job description using Google Gemini AI.
+
+**Request Headers:**
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "jobDescription": "Senior DevOps Engineer with 5+ years experience...",
+  "candidateCV": "John Doe\n\nExperience:\n- Senior DevOps Engineer at TechCorp (2020-2024)..."
+}
+```
+
+**Response (200):**
+```json
+{
+  "score": 85,
+  "summary": "Excellent match with strong DevOps background and relevant experience...",
+  "positives": [
+    "7+ years in DevOps and cloud infrastructure",
+    "Expertise in Kubernetes, Docker, and CI/CD pipelines",
+    "AWS certification and hands-on experience",
+    "Leadership experience managing teams"
+  ],
+  "negatives": [
+    "Limited experience with Terraform (nice-to-have)",
+    "No mentions of on-premise infrastructure knowledge"
+  ]
+}
+```
+
+**Response (400) - Validation Error:**
+```json
+{
+  "error": "Validation failed",
+  "details": {
+    "jobDescription": "This value is too short. It should have 50 characters or more.",
+    "candidateCV": "This value is not blank."
+  }
+}
+```
+
+**Response (502) - Gemini API Error:**
+```json
+{
+  "error": "Gemini API Error: HTTP 401"
+}
+```
+
+### CURL Examples
+
+```bash
+# Health check
+curl -X GET http://localhost:8000/api/health
+
+# Analyze candidate
+curl -X POST http://localhost:8000/api/analyze-candidate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jobDescription": "We are looking for a PHP developer with Symfony experience. Requirements: 5+ years PHP, 3+ years Symfony, expertise in REST APIs, Docker knowledge.",
+    "candidateCV": "Jane Smith\n\nExperience:\nSenior PHP Developer at WebCorp (2019-2024)\n- Developed REST APIs using Symfony 6\n- Docker containerization\n- 8 years PHP experience\n\nEducation:\nBS Computer Science"
+  }'
+```
+
+## 🏗️ Project Structure
+
+```
+symfony-backend/
+├── src/
+│   ├── Controller/
+│   │   └── CandidateAnalysisController.php      # API endpoints
+│   ├── Service/
+│   │   └── GeminiAnalysisService.php           # Gemini integration
+│   ├── DTO/
+│   │   ├── CandidateAnalysisRequest.php        # Request validation
+│   │   └── CandidateAnalysisResponse.php       # Response structure
+│   └── Exception/
+│       └── GeminiException.php                  # Custom exception
+├── config/
+│   └── packages/
+│       └── nelmio_cors.yaml                     # CORS configuration
+├── docker/
+│   ├── php/
+│   │   └── Dockerfile                           # PHP-FPM image
+│   └── nginx/
+│       ├── Dockerfile                           # Nginx image
+│       └── default.conf                         # Nginx config
+├── docker-compose.yml                           # Docker Compose setup
+├── .env                                         # Environment variables
+├── .env.example                                 # Example environment
+├── setup.sh                                     # Setup script
+├── cleanup.sh                                   # Cleanup script
+└── README.md                                    # This file
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```env
+# Symfony Environment
+APP_ENV=dev
+APP_DEBUG=1
+APP_SECRET=your_secret_key_here
+
+# Google Gemini API
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### CORS Settings
+
+The CORS configuration is located in `config/packages/nelmio_cors.yaml`. By default:
+- All origins are allowed (`*`)
+- CORS headers are configured for API routes (`/api/*`)
+- Methods: GET, POST, OPTIONS
+
+Modify this file for production as needed.
+
+## 📊 Scoring Algorithm
+
+The Gemini service evaluates candidates on:
+
+1. **Technical Skills Alignment** (40% weight)
+   - Required vs. actual technical skills
+   - Relevant tools and technologies
+
+2. **Relevant Experience** (30% weight)
+   - Years in relevant positions
+   - Industry experience
+   - Direct role experience
+
+3. **Education & Certifications** (15% weight)
+   - Degree level
+   - Relevant certifications
+   - Professional development
+
+4. **Soft Skills & Career Progression** (15% weight)
+   - Leadership experience
+   - Career growth
+   - Communication abilities
+
+## 🐛 Troubleshooting
+
+### Docker containers not starting
+
+```bash
+# Check logs
+docker-compose logs php
+docker-compose logs nginx
+
+# Rebuild containers
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### API Key not recognized
+
+```bash
+# Verify .env file
+cat .env
+
+# Check environment inside container
+docker-compose exec php printenv GEMINI_API_KEY
+
+# Restart containers after changing .env
+docker-compose restart
+```
+
+### Port already in use
+
+```bash
+# Change port in docker-compose.yml
+# Find "8000:80" and change first number to an available port
+nano docker-compose.yml
+
+# Rebuild and restart
+docker-compose down
+docker-compose up -d
+```
+
+## 🧹 Cleanup
+
+To remove all Docker containers, volumes, and project files:
+
+```bash
+bash cleanup.sh
+```
+
+This will:
+- Stop and remove Docker containers
+- Remove Docker volumes
+- Delete all project files
+- Keep your `.git` repository intact
+
+## 🔐 Production Considerations
+
+1. **Environment Variables**: Use strong, random `APP_SECRET` in production
+2. **API Key Security**: Store `GEMINI_API_KEY` in a secure secrets management system
+3. **CORS**: Update `nelmio_cors.yaml` to allow only your frontend domain
+4. **Logging**: Configure proper logging in `config/packages/` for production errors
+5. **Rate Limiting**: Implement rate limiting for the `/api/analyze-candidate` endpoint
+6. **Error Messages**: Disable `APP_DEBUG=1` in production
+
+## 📝 API Documentation
+
+For detailed API specifications and more examples, see the endpoints section above.
+
+### Error Codes
+
+- `200 OK` - Successful analysis
+- `400 Bad Request` - Validation error
+- `502 Bad Gateway` - Gemini API error
+- `500 Internal Server Error` - Server error
+
+## 🛠️ Development
+
+### Running Tests
+
+```bash
+docker-compose exec php bin/phpunit
+```
+
+### Clearing Cache
+
+```bash
+docker-compose exec php bin/console cache:clear
+```
+
+### Database Migrations (if added)
+
+```bash
+docker-compose exec php bin/console doctrine:migrations:migrate
+```
+
+## 📄 License
+
+MIT License - feel free to use and modify
+
+## 🤝 Contributing
+
+Contributions are welcome! Please ensure:
+- Code follows Symfony standards
+- All validation rules are maintained
+- Error handling is robust
+- Documentation is updated
+
+## 📞 Support
+
+For issues or questions:
+1. Check the troubleshooting section
+2. Review Docker logs: `docker-compose logs`
+3. Verify environment configuration in `.env`
+4. Check Gemini API documentation at [Google AI Studio](https://aistudio.google.com)
+
+---
+
+**Created with Symfony 7.0 and Google Gemini API**
