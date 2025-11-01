@@ -4,15 +4,14 @@ namespace App\Entity;
 
 use App\Repository\CandidateRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: CandidateRepository::class)]
 #[ORM\Table(name: 'candidates')]
 class Candidate
 {
     #[ORM\Id]
-    #[ORM\Column(type: 'uuid', unique: true)]
-    private ?Uuid $id = null;
+    #[ORM\Column(type: 'string', length: 36, unique: true)]
+    private ?string $id = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     private ?string $firstName = null;
@@ -46,13 +45,36 @@ class Candidate
 
     public function __construct()
     {
-        $this->id = Uuid::v4();
+        $this->id = $this->generateUuid();
         $this->submittedAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?Uuid
+    /**
+     * Générer un UUID v4
+     */
+    private function generateUuid(): string
+    {
+        $data = random_bytes(16);
+        $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+        $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+        return implode('-', [
+            bin2hex(substr($data, 0, 4)),
+            bin2hex(substr($data, 4, 2)),
+            bin2hex(substr($data, 6, 2)),
+            bin2hex(substr($data, 8, 2)),
+            bin2hex(substr($data, 10, 6))
+        ]);
+    }
+
+    public function getId(): ?string
     {
         return $this->id;
+    }
+
+    public function setId(string $id): static
+    {
+        $this->id = $id;
+        return $this;
     }
 
     public function getFirstName(): ?string
