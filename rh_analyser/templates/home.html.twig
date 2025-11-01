@@ -1,0 +1,383 @@
+{% extends "base.html.twig" %}
+
+{% block title %}RH Analyser - Scoring de Candidatures par IA{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <!-- Header with gradient -->
+    <header class="gradient-bg text-white shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="text-center">
+                <div class="inline-block mb-4">
+                    <i class="fas fa-brain text-4xl"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-3">RH Analyser</h1>
+                <p class="text-blue-100 text-lg md:text-xl font-light">Analyse automatique de candidatures avec Intelligence Artificielle</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left Panel - Input Form -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl smooth-transition">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center">
+                            <i class="fas fa-file-contract mr-3"></i>
+                            Analyse de Candidature
+                        </h2>
+                    </div>
+
+                    <form id="analysisForm" class="p-8 space-y-6">
+                        <!-- Job Description -->
+                        <div class="space-y-2">
+                            <label for="jobDescription" class="block text-sm font-semibold text-gray-700">
+                                <i class="fas fa-briefcase text-blue-600 mr-2"></i>
+                                Fiche de Poste
+                            </label>
+                            <textarea
+                                id="jobDescription"
+                                name="jobDescription"
+                                rows="6"
+                                placeholder="Collez ici la description du poste..."
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none smooth-transition resize-none"
+                                required
+                            ></textarea>
+                            <p class="text-xs text-gray-500 text-right">Min. 50 caractères</p>
+                        </div>
+
+                        <!-- CV Input -->
+                        <div class="space-y-2">
+                            <label for="candidateCV" class="block text-sm font-semibold text-gray-700">
+                                <i class="fas fa-user text-blue-600 mr-2"></i>
+                                CV du Candidat
+                            </label>
+                            <textarea
+                                id="candidateCV"
+                                name="candidateCV"
+                                rows="6"
+                                placeholder="Collez ici le CV du candidat..."
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none smooth-transition resize-none"
+                                required
+                            ></textarea>
+                            <p class="text-xs text-gray-500 text-right">Min. 50 caractères</p>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button
+                            type="submit"
+                            id="submitBtn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg smooth-transition glow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                        >
+                            <i class="fas fa-magic-wand"></i>
+                            <span>Analyser avec IA</span>
+                        </button>
+
+                        <!-- Loading Spinner (hidden by default) -->
+                        <div id="loadingSpinner" class="hidden text-center py-4">
+                            <div class="flex items-center justify-center space-x-2">
+                                <div class="animate-spin">
+                                    <i class="fas fa-spinner text-3xl text-blue-600"></i>
+                                </div>
+                                <span class="text-gray-600 font-semibold">Analyse en cours... (0-30s)</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="lg:col-span-7">
+                <div id="resultsContainer" class="hidden space-y-6">
+                    <!-- Score Card -->
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl smooth-transition">
+                        <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-6">
+                            <h3 class="text-2xl font-bold text-white flex items-center">
+                                <i class="fas fa-star mr-3"></i>
+                                Résultats de l'Analyse
+                            </h3>
+                        </div>
+
+                        <div class="p-8 space-y-6">
+                            <!-- Score Circle -->
+                            <div class="flex items-center justify-center">
+                                <div class="relative w-40 h-40">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                        <circle
+                                            id="scoreCircle"
+                                            cx="80"
+                                            cy="80"
+                                            r="70"
+                                            fill="none"
+                                            stroke="url(#scoreGradient)"
+                                            stroke-width="8"
+                                            stroke-linecap="round"
+                                            stroke-dasharray="0 439.82"
+                                            class="smooth-transition"
+                                        />
+                                        <defs>
+                                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="text-center">
+                                            <div id="scoreValue" class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">0</div>
+                                            <div class="text-gray-500 font-semibold">/100</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Summary -->
+                            <div id="summaryContainer" class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                                <p id="summary" class="text-gray-700 leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Positives and Negatives -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <!-- Positive Points -->
+                        <div class="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl smooth-transition">
+                            <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+                                <h4 class="text-xl font-bold text-white flex items-center">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    Points Positifs
+                                </h4>
+                            </div>
+                            <div class="p-6 space-y-3">
+                                <ul id="positivesList" class="space-y-3"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Negative Points -->
+                        <div class="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl smooth-transition">
+                            <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                                <h4 class="text-xl font-bold text-white flex items-center">
+                                    <i class="fas fa-exclamation-circle mr-2"></i>
+                                    Points à Améliorer
+                                </h4>
+                            </div>
+                            <div class="p-6 space-y-3">
+                                <ul id="negativesList" class="space-y-3"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-4">
+                        <button
+                            onclick="resetForm()"
+                            class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg smooth-transition flex items-center justify-center space-x-2"
+                        >
+                            <i class="fas fa-redo"></i>
+                            <span>Nouvelle Analyse</span>
+                        </button>
+                        <button
+                            onclick="downloadResults()"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg smooth-transition flex items-center justify-center space-x-2"
+                        >
+                            <i class="fas fa-download"></i>
+                            <span>Télécharger</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="bg-white rounded-2xl shadow-xl p-12 text-center">
+                    <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucune analyse en cours</h3>
+                    <p class="text-gray-600">Complétez le formulaire de gauche pour analyser une candidature</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorContainer" class="hidden bg-red-50 border border-red-200 rounded-2xl p-6">
+                    <div class="flex items-start space-x-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mt-1"></i>
+                        <div>
+                            <h4 class="text-lg font-bold text-red-800 mb-1">Erreur d'analyse</h4>
+                            <p id="errorMessage" class="text-red-700"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm">© 2024 RH Analyser - Powered by Google Gemini AI</p>
+        </div>
+    </footer>
+</div>
+
+<script>
+document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const jobDescription = document.getElementById('jobDescription').value;
+    const candidateCV = document.getElementById('candidateCV').value;
+
+    if (!jobDescription.trim() || !candidateCV.trim()) {
+        showError('Veuillez remplir tous les champs');
+        return;
+    }
+
+    // Show loading state
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('loadingSpinner').classList.remove('hidden');
+    document.getElementById('errorContainer').classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/analyze-candidate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                jobDescription,
+                candidateCV
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Erreur lors de l\'analyse');
+        }
+
+        displayResults(data);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('loadingSpinner').classList.add('hidden');
+    }
+});
+
+function displayResults(data) {
+    const score = data.score || 0;
+
+    // Update score circle animation
+    const circumference = 2 * Math.PI * 70; // r = 70
+    const offset = circumference - (score / 100) * circumference;
+    const scoreCircle = document.getElementById('scoreCircle');
+    scoreCircle.style.strokeDasharray = `${circumference - offset} ${circumference}`;
+
+    // Update score value with animation
+    animateCounter('scoreValue', 0, score, 1000);
+
+    // Update summary
+    document.getElementById('summary').textContent = data.summary;
+
+    // Update positive points
+    const positivesList = document.getElementById('positivesList');
+    positivesList.innerHTML = '';
+    (data.positives || []).forEach(point => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start space-x-3 p-3 bg-green-50 rounded-lg';
+        li.innerHTML = `
+            <i class="fas fa-check text-green-600 mt-1 flex-shrink-0"></i>
+            <span class="text-gray-700">${escapeHtml(point)}</span>
+        `;
+        positivesList.appendChild(li);
+    });
+
+    // Update negative points
+    const negativesList = document.getElementById('negativesList');
+    negativesList.innerHTML = '';
+    (data.negatives || []).forEach(point => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start space-x-3 p-3 bg-orange-50 rounded-lg';
+        li.innerHTML = `
+            <i class="fas fa-exclamation text-orange-600 mt-1 flex-shrink-0"></i>
+            <span class="text-gray-700">${escapeHtml(point)}</span>
+        `;
+        negativesList.appendChild(li);
+    });
+
+    // Show results, hide empty state
+    document.getElementById('resultsContainer').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+}
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorContainer').classList.remove('hidden');
+    document.getElementById('resultsContainer').classList.add('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+}
+
+function resetForm() {
+    document.getElementById('analysisForm').reset();
+    document.getElementById('resultsContainer').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('errorContainer').classList.add('hidden');
+}
+
+function downloadResults() {
+    const score = document.getElementById('scoreValue').textContent;
+    const summary = document.getElementById('summary').textContent;
+    const positives = Array.from(document.querySelectorAll('#positivesList li')).map(li => li.textContent.trim());
+    const negatives = Array.from(document.querySelectorAll('#negativesList li')).map(li => li.textContent.trim());
+
+    const content = `
+RH ANALYSER - RAPPORT D'ANALYSE
+================================
+Date: ${new Date().toLocaleDateString('fr-FR')}
+
+SCORE: ${score}/100
+
+RÉSUMÉ:
+${summary}
+
+POINTS POSITIFS:
+${positives.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+POINTS À AMÉLIORER:
+${negatives.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+================================
+Généré par RH Analyser
+    `.trim();
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analyse_${new Date().getTime()}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function animateCounter(elementId, start, end, duration) {
+    const element = document.getElementById(elementId);
+    const range = end - start;
+    const increment = end > start ? 1 : -1;
+    const stepTime = Math.abs(Math.floor(duration / range));
+
+    let current = start;
+    const timer = setInterval(() => {
+        current += increment;
+        element.textContent = current;
+        if (current == end) {
+            clearInterval(timer);
+        }
+    }, stepTime);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
