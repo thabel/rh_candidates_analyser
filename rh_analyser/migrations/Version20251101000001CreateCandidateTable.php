@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DoctrineMigrations;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
@@ -11,32 +12,46 @@ final class Version20251101000001CreateCandidateTable extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create candidates table for storing job applications';
+        return 'Create candidates table for storing job applications (portable across MySQL and PostgreSQL)';
     }
 
     public function up(Schema $schema): void
     {
-        $this->addSql('CREATE TABLE candidates (
-            id CHAR(36) NOT NULL COMMENT "(DC2Type:uuid)",
-            first_name VARCHAR(255) NOT NULL,
-            last_name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            cv_text LONGTEXT NOT NULL,
-            cv_file_name VARCHAR(255) DEFAULT NULL,
-            analysis_result JSON DEFAULT NULL,
-            score INT DEFAULT NULL,
-            submitted_at DATETIME NOT NULL COMMENT "(DC2Type:datetime_immutable)",
-            analyzed_at DATETIME DEFAULT NULL COMMENT "(DC2Type:datetime_immutable)",
-            status VARCHAR(50) NOT NULL DEFAULT "pending",
-            PRIMARY KEY(id),
-            UNIQUE KEY UNIQ_E4B5FA50E7927C74 (email),
-            INDEX idx_status (status),
-            INDEX idx_submitted_at (submitted_at)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB');
+       $table = $schema->createTable('candidates');
+
+$table->addColumn('id', Types::STRING, ['length' => 36]);
+$table->addColumn('first_name', Types::STRING, ['length' => 255]);
+$table->addColumn('last_name', Types::STRING, ['length' => 255]);
+$table->addColumn('email', Types::STRING, ['length' => 255]);
+$table->addColumn('cv_text', Types::TEXT);
+$table->addColumn('cv_file_name', Types::STRING, [
+    'length' => 255,
+    'notnull' => false,
+]);
+$table->addColumn('analysis_result', Types::JSON, [
+    'notnull' => false,
+]);
+$table->addColumn('score', Types::INTEGER, [
+    'notnull' => false,
+]);
+$table->addColumn('submitted_at', Types::DATETIME_IMMUTABLE);
+$table->addColumn('analyzed_at', Types::DATETIME_IMMUTABLE, [
+    'notnull' => false,
+]);
+$table->addColumn('status', Types::STRING, [
+    'length' => 50,
+    'default' => 'pending',
+]);
+
+$table->setPrimaryKey(['id']);
+$table->addUniqueIndex(['email']);
+$table->addIndex(['status']);
+$table->addIndex(['submitted_at']);
+
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE candidates');
+        $schema->dropTable('candidates');
     }
 }

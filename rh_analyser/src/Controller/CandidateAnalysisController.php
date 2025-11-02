@@ -23,12 +23,7 @@ class CandidateAnalysisController extends AbstractController
     /**
      * Affiche la page d'accueil de l'application
      */
-    #[Route('/', name: 'app_home', methods: ['GET'])]
-    public function home(): \Symfony\Component\HttpFoundation\Response
-    {
-        return $this->render('home.html.twig');
-    }
-
+  
     /**
      * Endpoint API pour analyser une candidature
      *
