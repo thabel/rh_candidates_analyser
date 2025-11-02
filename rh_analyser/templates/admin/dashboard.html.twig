@@ -8,328 +8,386 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: #f5f5f5;
+            display: flex;
+            height: 100vh;
         }
         header {
-            background: rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        header h1 { font-size: 28px; }
+        header h1 { font-size: 22px; }
         .logout {
             background: rgba(255,255,255,0.2);
-            padding: 10px 18px;
+            padding: 8px 14px;
             border-radius: 5px;
             text-decoration: none;
             color: white;
-            font-size: 14px;
+            font-size: 13px;
+            transition: all 0.3s;
         }
         .logout:hover { background: rgba(255,255,255,0.3); }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-        .stats-header {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card .number {
-            font-size: 36px;
-            font-weight: bold;
-            color: #667eea;
-            margin: 10px 0;
-        }
-        .stat-card .label {
-            color: #666;
-            font-size: 13px;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        .section-title {
-            color: white;
-            font-size: 24px;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-        .jobs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .job-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            color: inherit;
+
+        .main-layout {
             display: flex;
-            flex-direction: column;
+            margin-top: 60px;
+            width: 100%;
+            height: calc(100vh - 60px);
         }
-        .job-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
         }
-        .job-card-header {
+
+        .sidebar-header {
+            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .job-card-header h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
-        .job-card-header p {
-            font-size: 12px;
-            opacity: 0.9;
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .job-card-body {
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .job-stats {
+
+        .stats-mini {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 15px;
         }
-        .job-stat {
+
+        .stat-mini {
             text-align: center;
         }
-        .job-stat .number {
-            font-size: 20px;
+
+        .stat-mini .number {
+            font-size: 18px;
             font-weight: bold;
-            color: #333;
+            color: #667eea;
         }
-        .job-stat .label {
+
+        .stat-mini .label {
             font-size: 11px;
             color: #999;
             text-transform: uppercase;
-            font-weight: 600;
+            margin-top: 2px;
         }
-        .job-stat.pending .number { color: #ffc107; }
-        .job-stat.analyzed .number { color: #28a745; }
-        .view-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
+
+        .jobs-list {
+            padding: 0;
+            list-style: none;
+        }
+
+        .job-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            width: 100%;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            position: relative;
         }
-        .view-btn:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
+
+        .job-item:hover {
+            background: #f9f9f9;
         }
-        /* Candidate List View */
-        .candidates-view {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .candidates-header {
+
+        .job-item.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-left: 4px solid white;
         }
-        .candidates-header h2 {
+
+        .job-item.active .job-title { color: white; }
+        .job-item.active .job-stats { color: rgba(255,255,255,0.9); }
+
+        .job-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .job-stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .job-stat-item {
+            text-align: center;
+        }
+
+        .job-stat-number {
+            display: block;
+            font-weight: bold;
+            font-size: 13px;
+            color: #667eea;
+        }
+
+        .job-item.active .job-stat-number {
+            color: #fff;
+        }
+
+        .job-stat-label {
+            display: block;
+            font-size: 9px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 25px;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .content-header h2 {
+            color: #333;
+            margin-bottom: 5px;
             font-size: 22px;
         }
-        .candidates-header p {
+
+        .content-header p {
+            color: #999;
             font-size: 13px;
-            opacity: 0.9;
-            margin-top: 5px;
+            line-height: 1.5;
+            max-width: 600px;
+            margin-bottom: 15px;
         }
-        .back-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .back-btn:hover { background: rgba(255,255,255,0.3); }
-        .filter-bar {
-            padding: 20px 25px;
-            background: #f9f9f9;
-            border-bottom: 1px solid #eee;
+
+        .content-controls {
             display: flex;
             gap: 10px;
+            align-items: center;
             flex-wrap: wrap;
         }
-        .filter-btn {
-            padding: 8px 16px;
+
+        .filter-badges {
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            background: #f0f0f0;
             border: 1px solid #ddd;
-            background: white;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            color: #333;
         }
-        .filter-btn:hover {
-            background: #f0f0f0;
+
+        .badge:hover {
+            background: #e0e0e0;
         }
-        .filter-btn.active {
+
+        .badge.active {
             background: #667eea;
             color: white;
             border-color: #667eea;
         }
-        .candidates-list {
-            padding: 0;
-        }
-        .candidate-item {
-            padding: 20px 25px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.2s;
-        }
-        .candidate-item:hover {
-            background: #f9f9f9;
-        }
-        .candidate-item:last-child {
-            border-bottom: none;
-        }
-        .candidate-info {
-            flex: 1;
-        }
-        .candidate-name {
-            font-weight: 600;
-            color: #333;
-            font-size: 15px;
-            margin-bottom: 3px;
-        }
-        .candidate-email {
-            font-size: 13px;
-            color: #999;
-        }
-        .candidate-meta {
-            display: flex;
-            gap: 25px;
-            align-items: center;
-        }
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-analyzing { background: #cfe2ff; color: #084298; }
-        .status-analyzed { background: #d1e7dd; color: #0f5132; }
-        .score {
-            font-weight: bold;
-            min-width: 60px;
-            text-align: center;
-        }
-        .score.high { color: #28a745; }
-        .score.low { color: #dc3545; }
-        .score.none { color: #999; }
-        .view-candidate-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .view-candidate-btn:hover {
-            background: #764ba2;
-        }
-        .batch-analyze-btn {
+
+        .batch-btn {
             background: #28a745;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
+            transition: all 0.2s;
+            margin-left: auto;
         }
-        .batch-analyze-btn:hover {
+
+        .batch-btn:hover {
             background: #218838;
         }
+
+        .batch-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .candidates-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .candidate-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .candidate-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(4px);
+        }
+
+        .candidate-info {
+            flex: 1;
+        }
+
+        .candidate-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .candidate-email {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .candidate-meta {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-analyzing { background: #cfe2ff; color: #084298; }
+        .status-analyzed { background: #d1e7dd; color: #0f5132; }
+
+        .score {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .score.high { color: #28a745; }
+        .score.low { color: #dc3545; }
+        .score.none { color: #999; }
+
+        .view-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .view-btn:hover {
+            background: #764ba2;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #999;
         }
+
         .empty-state p {
-            font-size: 16px;
+            font-size: 15px;
             margin-bottom: 10px;
         }
+
         .alerts {
-            margin-bottom: 20px;
+            padding: 15px 25px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
         }
+
         .alert {
-            padding: 12px 20px;
+            padding: 12px 16px;
             border-radius: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 500;
+            font-size: 13px;
         }
+
         .alert.success {
             background: #d1e7dd;
             color: #0f5132;
             border-left: 4px solid #28a745;
         }
+
         .alert.error {
             background: #f8d7da;
             color: #721c24;
             border-left: 4px solid #dc3545;
         }
+
+        .no-selection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            font-size: 15px;
+        }
+
         @media (max-width: 768px) {
-            .stats-header {
-                grid-template-columns: 1fr;
+            .main-layout {
+                flex-direction: column;
             }
-            .jobs-grid {
-                grid-template-columns: 1fr;
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
             }
             .candidate-meta {
                 flex-direction: column;
-                align-items: flex-start;
                 gap: 8px;
+                align-items: flex-start;
             }
         }
     </style>
@@ -340,60 +398,91 @@
         <a href="{{ path('admin_logout') }}" class="logout">🚪 Déconnexion</a>
     </header>
 
-    <div class="container">
-        <div class="alerts">
-            {% for message in app.flashes('success') %}
-                <div class="alert success">✅ {{ message }}</div>
-            {% endfor %}
-            {% for message in app.flashes('error') %}
-                <div class="alert error">❌ {{ message }}</div>
-            {% endfor %}
+    <div class="main-layout">
+        <!-- SIDEBAR: Liste des Offres -->
+        <div class="sidebar">
+            <div class="sidebar-header">📋 Offres d'Emploi</div>
+
+            <div class="stats-mini">
+                <div class="stat-mini">
+                    <div class="number">{{ totalCandidates }}</div>
+                    <div class="label">Total</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="number" style="color: #ffc107;">{{ totalPending }}</div>
+                    <div class="label">En Attente</div>
+                </div>
+            </div>
+
+            <ul class="jobs-list">
+                {% for job in jobs %}
+                    <li class="job-item" onclick="selectJob({{ job.id }}, this)">
+                        <div class="job-title">{{ job.title }}</div>
+                        <div class="job-stats">
+                            <div class="job-stat-item">
+                                <span class="job-stat-number">{{ jobStats[job.id].total }}</span>
+                                <span class="job-stat-label">Total</span>
+                            </div>
+                            <div class="job-stat-item">
+                                <span class="job-stat-number" style="color: #ffc107;">{{ jobStats[job.id].pending }}</span>
+                                <span class="job-stat-label">Attente</span>
+                            </div>
+                            <div class="job-stat-item">
+                                <span class="job-stat-number" style="color: #28a745;">{{ jobStats[job.id].analyzed }}</span>
+                                <span class="job-stat-label">Analysés</span>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            {% if jobs|length == 0 %}
+                <div class="empty-state" style="padding: 30px; font-size: 12px;">
+                    <p>📋 Aucune offre</p>
+                </div>
+            {% endif %}
         </div>
 
-        <!-- Statistics -->
-        <div class="stats-header">
-            <div class="stat-card">
-                <div class="label">📋 Total Candidats</div>
-                <div class="number">{{ totalCandidates }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">⏳ En Attente</div>
-                <div class="number" style="color: #ffc107;">{{ totalPending }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">✅ Analysés</div>
-                <div class="number" style="color: #28a745;">{{ totalAnalyzed }}</div>
-            </div>
-        </div>
-
-        <!-- Job Selection or Candidate List -->
-        {% if selectedJobId %}
-            <!-- CANDIDATE LIST VIEW -->
-            <div class="candidates-view">
-                <div class="candidates-header">
-                    <div>
-                        <h2>{{ currentJob.title }}</h2>
-                        <p>{{ currentJob.description|slice(0, 150) }}...</p>
+        <!-- MAIN: Contenu -->
+        <div class="main-content">
+            {% if selectedJobId and currentJob %}
+                <!-- Alerts -->
+                {% if app.flashes('success') or app.flashes('error') %}
+                    <div class="alerts">
+                        {% for message in app.flashes('success') %}
+                            <div class="alert success">✅ {{ message }}</div>
+                        {% endfor %}
+                        {% for message in app.flashes('error') %}
+                            <div class="alert error">❌ {{ message }}</div>
+                        {% endfor %}
                     </div>
-                    <form method="POST" action="{{ path('admin_analyze_batch', {jobId: currentJob.id}) }}" style="margin-left: auto;">
+                {% endif %}
+
+                <!-- Header -->
+                <div class="content-header">
+                    <h2>{{ currentJob.title }}</h2>
+                    <p>{{ currentJob.description|slice(0, 200) }}...</p>
+
+                    <div class="content-controls">
+                        <div class="filter-badges">
+                            <span class="badge {% if currentFilter == 'all' %}active{% endif %}" onclick="filterCandidates('all', {{ currentJob.id }})">Tous ({{ totalJobCandidates }})</span>
+                            <span class="badge {% if currentFilter == 'pending' %}active{% endif %}" onclick="filterCandidates('pending', {{ currentJob.id }})">⏳ Attente ({{ jobPendingCount }})</span>
+                            <span class="badge {% if currentFilter == 'analyzed' %}active{% endif %}" onclick="filterCandidates('analyzed', {{ currentJob.id }})">✅ Analysés ({{ jobAnalyzedCount }})</span>
+                        </div>
+
                         {% if jobPendingCount > 0 %}
-                            <button type="submit" class="batch-analyze-btn">🚀 Analyser {{ jobPendingCount }} Candidats</button>
+                            <form method="POST" action="{{ path('admin_analyze_batch', {jobId: currentJob.id}) }}" style="display: contents;">
+                                <button type="submit" class="batch-btn">🚀 Analyser {{ jobPendingCount }}</button>
+                            </form>
                         {% endif %}
-                    </form>
-                    <a href="{{ path('admin_dashboard') }}" class="back-btn" style="margin-left: 15px;">← Retour</a>
+                    </div>
                 </div>
 
-                <div class="filter-bar">
-                    <strong style="color: #667eea;">Filtrer:</strong>
-                    <a href="?filter=all" class="filter-btn {% if currentFilter == 'all' %}active{% endif %}">Tous ({{ totalJobCandidates }})</a>
-                    <a href="?filter=pending" class="filter-btn {% if currentFilter == 'pending' %}active{% endif %}">⏳ En Attente ({{ jobPendingCount }})</a>
-                    <a href="?filter=analyzed" class="filter-btn {% if currentFilter == 'analyzed' %}active{% endif %}">✅ Analysés ({{ jobAnalyzedCount }})</a>
-                </div>
-
-                <div class="candidates-list">
+                <!-- Candidates List -->
+                <div class="candidates-container">
                     {% if candidatesByJob|length > 0 %}
                         {% for candidate in candidatesByJob %}
-                            <div class="candidate-item">
+                            <div class="candidate-card">
                                 <div class="candidate-info">
                                     <div class="candidate-name">{{ candidate.firstName }} {{ candidate.lastName }}</div>
                                     <div class="candidate-email">{{ candidate.email }}</div>
@@ -401,9 +490,9 @@
                                 <div class="candidate-meta">
                                     <span class="status-badge status-{{ candidate.status }}">
                                         {% if candidate.status == 'pending' %}
-                                            ⏳ En attente
+                                            ⏳ Attente
                                         {% elseif candidate.status == 'analyzing' %}
-                                            ⚙️ Analyse...
+                                            ⚙️ Analyse
                                         {% else %}
                                             ✅ Analysée
                                         {% endif %}
@@ -415,7 +504,7 @@
                                             -
                                         {% endif %}
                                     </div>
-                                    <a href="{{ path('admin_view_candidate', {id: candidate.id}) }}" class="view-candidate-btn">👁️ Voir</a>
+                                    <a href="{{ path('admin_view_candidate', {id: candidate.id}) }}" class="view-btn">Voir →</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -425,44 +514,40 @@
                         </div>
                     {% endif %}
                 </div>
-            </div>
-        {% else %}
-            <!-- JOB SELECTION VIEW -->
-            <div class="section-title">👇 Sélectionnez une offre d'emploi</div>
-            <div class="jobs-grid">
-                {% for job in jobs %}
-                    <div class="job-card">
-                        <div class="job-card-header">
-                            <h3>{{ job.title }}</h3>
-                            <p>{{ job.description|slice(0, 80) }}...</p>
-                        </div>
-                        <div class="job-card-body">
-                            <div class="job-stats">
-                                <div class="job-stat">
-                                    <div class="number">{{ jobStats[job.id].total }}</div>
-                                    <div class="label">Total</div>
-                                </div>
-                                <div class="job-stat pending">
-                                    <div class="number">{{ jobStats[job.id].pending }}</div>
-                                    <div class="label">Attente</div>
-                                </div>
-                                <div class="job-stat analyzed">
-                                    <div class="number">{{ jobStats[job.id].analyzed }}</div>
-                                    <div class="label">Analysés</div>
-                                </div>
-                            </div>
-                            <a href="?job={{ job.id }}" class="view-btn">Voir Candidats →</a>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            {% if jobs|length == 0 %}
-                <div class="empty-state">
-                    <p>📋 Aucune offre d'emploi créée.</p>
+            {% else %}
+                <div class="no-selection">
+                    ← Sélectionnez une offre à gauche
                 </div>
             {% endif %}
-        {% endif %}
+        </div>
     </div>
+
+    <script>
+        function selectJob(jobId, element) {
+            // Mark as active
+            document.querySelectorAll('.job-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            // Navigate
+            window.location.href = '?job=' + jobId;
+        }
+
+        function filterCandidates(filter, jobId) {
+            window.location.href = '?job=' + jobId + '&filter=' + filter;
+        }
+
+        // Auto-select first job if available
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectedJobId = '{{ selectedJobId }}';
+            if (selectedJobId) {
+                const jobItems = document.querySelectorAll('.job-item');
+                jobItems.forEach(item => {
+                    if (item.getAttribute('onclick').includes('selectJob(' + selectedJobId)) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
