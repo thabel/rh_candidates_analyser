@@ -10,6 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
 use App\Entity\Candidate;
 use App\Entity\JobDescription;
+use App\Service\PdfExtractorService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -17,7 +18,8 @@ class CandidateAuthController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private PdfExtractorService $pdfExtractor
     ) {}
 
     /**
@@ -303,15 +305,36 @@ class CandidateAuthController extends AbstractController
 
             // Move file
             $cvFile->move($uploadsDir, $fileName);
+            $filePath = $uploadsDir . '/' . $fileName;
+
+            // Extract text from PDF
+            try {
+                $cvText = $this->pdfExtractor->extractText($filePath);
+                $this->logger->info('Texte du CV extrait', [
+                    'candidate_id' => $candidateId,
+                    'text_length' => strlen($cvText)
+                ]);
+            } catch (\Exception $e) {
+                $this->logger->error('Erreur extraction texte PDF', [
+                    'candidate_id' => $candidateId,
+                    'error' => $e->getMessage()
+                ]);
+                $cvText = ''; // Fallback à texte vide
+            }
 
             // Update candidate
             $candidate->setCvFileName($fileName);
+            $candidate->setCvText($cvText);
             $candidate->setStatus('pending');
 
             $this->entityManager->persist($candidate);
             $this->entityManager->flush();
 
-            $this->logger->info('CV téléchargé', ['candidate_id' => $candidateId, 'filename' => $fileName]);
+            $this->logger->info('CV téléchargé et traité', [
+                'candidate_id' => $candidateId,
+                'filename' => $fileName,
+                'cv_text_length' => strlen($cvText)
+            ]);
 
             return $this->json([
                 'success' => true,
