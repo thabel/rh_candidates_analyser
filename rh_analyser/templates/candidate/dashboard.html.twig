@@ -81,7 +81,10 @@
                         <div class="info-value" style="color: #28a745;">
                             ✅ {{ candidate.cvFileName }}
                         </div>
-                        <a href="{{ path('app_candidate_download_cv', {'id': candidate.id}) }}" style="color: #667eea; text-decoration: none; display: inline-block; margin-top: 8px;">📥 Télécharger</a>
+                        <div style="margin-top: 8px; display: flex; gap: 10px;">
+                            <a href="{{ path('app_candidate_download_cv', {'id': candidate.id}) }}" style="color: #667eea; text-decoration: none; display: inline-block;">📥 Télécharger</a>
+                            <button onclick="showReuploadForm()" style="color: #667eea; background: none; border: none; cursor: pointer; text-decoration: none; padding: 0;">🔄 Renvoyer un CV</button>
+                        </div>
                     {% else %}
                         <div class="info-value" style="color: #dc3545;">
                             ❌ Aucun CV téléchargé
@@ -89,21 +92,21 @@
                     {% endif %}
                 </div>
 
-                {% if candidate.score is not null %}
+                <!-- Analysis Status (Pass/Fail) - NOT the score -->
+                {% if candidate.status == 'analyzed' %}
                     <div class="info-item" style="margin-top: 20px;">
-                        <div class="info-label">Score Obtenu</div>
-                        <div class="score {% if candidate.score >= 80 %}score-high{% else %}score-low{% endif %}">
-                            {{ candidate.score }}/100
-                        </div>
-                    </div>
-                {% endif %}
-
-                {% if candidate.analysisResult %}
-                    <div class="info-item" style="margin-top: 20px;">
-                        <div class="info-label">Résumé</div>
-                        <div class="info-value" style="margin-top: 8px; line-height: 1.5;">
-                            {{ candidate.analysisResult.summary }}
-                        </div>
+                        <div class="info-label">Résultat de l'Analyse</div>
+                        {% if candidate.analysisResult and candidate.analysisResult.score >= 70 %}
+                            <div style="padding: 15px; background: #d1e7dd; border-left: 4px solid #28a745; border-radius: 5px; color: #0f5132;">
+                                <strong>✅ Candidature Acceptée!</strong>
+                                <p style="margin: 8px 0 0 0; font-size: 0.95em;">Félicitations! Vous avez réussi l'étape de sélection.</p>
+                            </div>
+                        {% else %}
+                            <div style="padding: 15px; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 5px; color: #842029;">
+                                <strong>❌ Candidature Non Acceptée</strong>
+                                <p style="margin: 8px 0 0 0; font-size: 0.95em;">Vous pouvez renvoyer un nouveau CV pour une nouvelle analyse.</p>
+                            </div>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>
@@ -126,29 +129,7 @@
             </div>
         </div>
 
-        {% if candidate.analysisResult %}
-            <div class="card">
-                <h2>📊 Analyse Détaillée</h2>
-
-                <div style="margin-bottom: 20px;">
-                    <h3 style="color: #333; margin-bottom: 10px;">✅ Points Forts</h3>
-                    {% for point in candidate.analysisResult.positives %}
-                        <div style="padding: 10px; background: #f0f9f6; border-left: 3px solid #28a745; margin-bottom: 8px; border-radius: 5px;">
-                            • {{ point }}
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div>
-                    <h3 style="color: #333; margin-bottom: 10px;">⚠️ Points à Améliorer</h3>
-                    {% for point in candidate.analysisResult.negatives %}
-                        <div style="padding: 10px; background: #fdf7f7; border-left: 3px solid #dc3545; margin-bottom: 8px; border-radius: 5px;">
-                            • {{ point }}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
+        <!-- Detailed analysis is hidden from candidates (showing only pass/fail) -->
 
         <div class="card">
             <h2>📋 Postuler à une Offre</h2>
@@ -175,9 +156,23 @@
                         <div id="uploadStatus" style="margin-top: 15px; display: none;"></div>
                     </div>
                 {% else %}
-                    <div style="background: #cfe2ff; border-left: 4px solid #084298; padding: 15px; border-radius: 5px;">
+                    <div style="background: #cfe2ff; border-left: 4px solid #084298; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
                         <strong style="color: #084298;">✅ CV Téléchargé</strong><br>
                         <p style="color: #084298; margin: 5px 0 0 0;">{{ candidate.cvFileName }}</p>
+                    </div>
+
+                    <!-- Re-upload CV Form (Hidden by default) -->
+                    <div id="reuploadSection" style="display: none; margin-bottom: 20px;">
+                        <h3 style="color: #333; margin-bottom: 15px;">📄 Renvoyer un nouveau CV (PDF)</h3>
+                        <p style="color: #555; margin-bottom: 15px;">
+                            Sélectionnez un nouveau CV pour remplacer l'ancien et relancer l'analyse.
+                        </p>
+                        <form id="cvReuploadForm" style="display: flex; gap: 10px; align-items: flex-start;">
+                            <input type="file" id="cvReuploadFile" name="cvFile" accept=".pdf" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer;">
+                            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">🔄 Renvoyer</button>
+                            <button type="button" onclick="hideReuploadForm()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">Annuler</button>
+                        </form>
+                        <div id="reuploadStatus" style="margin-top: 15px; display: none;"></div>
                     </div>
                 {% endif %}
             {% else %}
@@ -204,6 +199,15 @@
     </div>
 
 <script>
+// Show/Hide re-upload form
+function showReuploadForm() {
+    document.getElementById('reuploadSection').style.display = 'block';
+}
+
+function hideReuploadForm() {
+    document.getElementById('reuploadSection').style.display = 'none';
+}
+
 // Load available jobs if candidate hasn't selected one yet
 const jobsList = document.getElementById('jobsList');
 if (jobsList) {
@@ -258,7 +262,7 @@ async function selectJob(jobId, jobTitle) {
     }
 }
 
-// CV Upload form
+// CV Upload form (initial upload)
 const cvUploadForm = document.getElementById('cvUploadForm');
 if (cvUploadForm) {
     cvUploadForm.addEventListener('submit', async (e) => {
@@ -312,6 +316,64 @@ if (cvUploadForm) {
 
         } catch (error) {
             uploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ ' + error.message + '</div>';
+        }
+    });
+}
+
+// CV Re-upload form (replacing old CV)
+const cvReuploadForm = document.getElementById('cvReuploadForm');
+if (cvReuploadForm) {
+    cvReuploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const cvFile = document.getElementById('cvReuploadFile').files[0];
+        const reuploadStatus = document.getElementById('reuploadStatus');
+
+        if (!cvFile) {
+            reuploadStatus.style.display = 'block';
+            reuploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Veuillez sélectionner un fichier PDF</div>';
+            return;
+        }
+
+        if (cvFile.type !== 'application/pdf') {
+            reuploadStatus.style.display = 'block';
+            reuploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Le fichier doit être au format PDF</div>';
+            return;
+        }
+
+        if (cvFile.size > 5 * 1024 * 1024) { // 5MB limit
+            reuploadStatus.style.display = 'block';
+            reuploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Le fichier ne doit pas dépasser 5MB</div>';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('cvFile', cvFile);
+
+        try {
+            reuploadStatus.style.display = 'block';
+            reuploadStatus.innerHTML = '<div style="color: #084298; padding: 10px; background: #cfe2ff; border-radius: 5px;">⏳ Téléchargement du nouveau CV en cours...</div>';
+
+            const response = await fetch('{{ path("app_candidate_upload_cv") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Erreur lors du téléchargement');
+            }
+
+            reuploadStatus.innerHTML = '<div style="color: #0f5132; padding: 10px; background: #d1e7dd; border-radius: 5px;">✅ ' + data.message + '</div>';
+
+            // Reload page after 2 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+
+        } catch (error) {
+            reuploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ ' + error.message + '</div>';
         }
     });
 }
