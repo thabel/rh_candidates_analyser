@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CandidateRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CandidateRepository::class)]
@@ -19,8 +21,14 @@ class Candidate
     #[ORM\Column(type: 'string', length: 255)]
     private ?string $lastName = null;
 
-    #[ORM\Column(type: 'string', length: 255)]
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
     private ?string $email = null;
+
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
+    private ?string $username = null;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private ?string $password = null;
 
     #[ORM\Column(type: 'text')]
     private ?string $cvText = null;
@@ -35,6 +43,9 @@ class Candidate
     private ?int $score = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $submittedAt = null;
 
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
@@ -43,10 +54,21 @@ class Candidate
     #[ORM\Column(type: 'string', length: 50)]
     private string $status = 'pending'; // pending, analyzing, analyzed
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $isActive = true;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $notificationSent = false;
+
+    #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'candidate', cascade: ['remove'])]
+    private Collection $notifications;
+
     public function __construct()
     {
         $this->id = $this->generateUuid();
+        $this->createdAt = new \DateTimeImmutable();
         $this->submittedAt = new \DateTimeImmutable();
+        $this->notifications = new ArrayCollection();
     }
 
     /**
@@ -110,6 +132,28 @@ class Candidate
         return $this;
     }
 
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): static
+    {
+        $this->username = $username;
+        return $this;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): static
+    {
+        $this->password = $password;
+        return $this;
+    }
+
     public function getCvText(): ?string
     {
         return $this->cvText;
@@ -154,6 +198,11 @@ class Candidate
         return $this;
     }
 
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
     public function getSubmittedAt(): ?\DateTimeImmutable
     {
         return $this->submittedAt;
@@ -181,6 +230,54 @@ class Candidate
             throw new \InvalidArgumentException('Invalid status');
         }
         $this->status = $status;
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function isNotificationSent(): bool
+    {
+        return $this->notificationSent;
+    }
+
+    public function setNotificationSent(bool $notificationSent): static
+    {
+        $this->notificationSent = $notificationSent;
+        return $this;
+    }
+
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setCandidate($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            if ($notification->getCandidate() === $this) {
+                $notification->setCandidate(null);
+            }
+        }
+
         return $this;
     }
 

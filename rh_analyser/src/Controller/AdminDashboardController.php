@@ -10,6 +10,7 @@ use App\Entity\Candidate;
 use App\Entity\JobDescription;
 use App\Service\AuthService;
 use App\Service\GeminiAnalysisService;
+use App\Service\NotificationService;
 use App\Exception\GeminiException;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -21,6 +22,7 @@ class AdminDashboardController extends AbstractController
         private AuthService $authService,
         private EntityManagerInterface $entityManager,
         private GeminiAnalysisService $geminiService,
+        private NotificationService $notificationService,
         private LoggerInterface $logger
     ) {}
 
@@ -144,6 +146,13 @@ class AdminDashboardController extends AbstractController
             $candidate->setStatus('analyzed');
             $candidate->setAnalyzedAt(new \DateTimeImmutable());
             $this->entityManager->flush();
+
+            // Envoyer notification si score >= 80
+            if ($result['score'] ?? 0 >= 80) {
+                $this->notificationService->notifyIfQualified($candidate, $result['score']);
+            } else {
+                $this->notificationService->notifyIfRejected($candidate, $result['score']);
+            }
 
             $this->logger->info('Analyse réussie', ['candidateId' => $id, 'score' => $result['score']]);
             $this->addFlash('success', 'Analyse réussie! Score: ' . ($result['score'] ?? 'N/A'));

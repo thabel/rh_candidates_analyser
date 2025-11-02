@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Candidature - Recrutement</title>
+    <title>TechCorp - Senior Full Stack Developer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -13,115 +13,139 @@
             padding: 20px;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         header {
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
             margin-bottom: 30px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         header h1 {
             color: #333;
-            margin-bottom: 5px;
+            font-size: 28px;
         }
-        header .subtitle {
-            color: #666;
-            font-size: 14px;
+        header .company {
+            color: #667eea;
+            font-weight: bold;
         }
-        .nav-links {
-            margin-top: 15px;
-        }
-        .nav-links a {
-            display: inline-block;
-            margin-right: 15px;
+        header .nav-links a {
+            margin-left: 20px;
             color: #667eea;
             text-decoration: none;
-            font-size: 14px;
+            font-weight: 500;
         }
-        .nav-links a:hover {
+        header .nav-links a:hover {
             text-decoration: underline;
         }
         .content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
         }
-        .job-section, .form-section {
+        .job-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .job-card h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .job-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .meta-label {
+            color: #999;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .meta-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+        .job-section {
+            margin-bottom: 25px;
+        }
+        .job-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+        .job-section ul, .job-section ol {
+            margin-left: 20px;
+            line-height: 1.8;
+            color: #555;
+        }
+        .job-section li {
+            margin-bottom: 8px;
+        }
+        .job-section p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .sidebar {
             background: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
         }
-        .job-section h2, .form-section h2 {
+        .sidebar h3 {
             color: #333;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .job-section .job-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .job-section .job-description {
-            color: #555;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 5px;
-        }
-        .form-group {
             margin-bottom: 20px;
+            font-size: 18px;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        .form-group input[type="text"],
-        .form-group input[type="email"],
-        .form-group textarea {
+        .apply-btn {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-            font-size: 14px;
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
+            padding: 15px;
             background: #667eea;
             color: white;
             border: none;
             border-radius: 5px;
             font-weight: bold;
-            cursor: pointer;
             font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 15px;
             transition: background 0.3s;
         }
-        .submit-btn:hover {
+        .apply-btn:hover {
             background: #764ba2;
+        }
+        .info-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .info-box strong {
+            color: #333;
         }
         .alerts {
             margin-bottom: 20px;
@@ -141,14 +165,28 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        .alert.warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
+        .footer {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
         }
         @media (max-width: 768px) {
             .content {
                 grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: static;
+            }
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            header .nav-links {
+                width: 100%;
+                text-align: right;
             }
         }
     </style>
@@ -156,11 +194,12 @@
 <body>
     <div class="container">
         <header>
-            <h1>🏢 Système de Recrutement</h1>
-            <p class="subtitle">Postulez à nos offres d'emploi</p>
+            <div>
+                <h1>💼 <span class="company">TechCorp</span> Careers</h1>
+            </div>
             <div class="nav-links">
-                <a href="{{ path('app_check_status') }}">📊 Vérifier mon statut</a>
-                <a href="{{ path('admin_login') }}">🔐 Espace Admin RH</a>
+                <a href="{{ path('app_check_status') }}">📊 Suivi Candidature</a>
+                <a href="{{ path('app_candidate_login') }}">🔐 Se Connecter</a>
             </div>
         </header>
 
@@ -171,44 +210,139 @@
             {% for message in app.flashes('error') %}
                 <div class="alert error">❌ {{ message }}</div>
             {% endfor %}
-            {% for message in app.flashes('warning') %}
-                <div class="alert warning">⚠️ {{ message }}</div>
-            {% endfor %}
         </div>
 
         <div class="content">
-            <div class="job-section">
-                <h2>📋 Offre d'Emploi</h2>
-                <div class="job-title">{{ job.title }}</div>
-                <div class="job-description">{{ job.description }}</div>
+            <div class="job-card">
+                <h2>Senior Full Stack Developer</h2>
+                <div class="job-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">📍 Localisation</span>
+                        <span class="meta-value">Paris, France (Hybrid)</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">💰 Salaire</span>
+                        <span class="meta-value">€55,000 - €75,000/an</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">⏱️ Type</span>
+                        <span class="meta-value">CDI Temps Plein</span>
+                    </div>
+                </div>
+
+                <div class="job-section">
+                    <h3>À Propos de TechCorp</h3>
+                    <p>
+                        TechCorp est une entreprise leader en solutions cloud et d'automatisation intelligente.
+                        Depuis 2015, nous aidons les plus grandes entreprises européennes à transformer leur infrastructure
+                        numérique. Avec une équipe de 150+ experts répartis entre Paris, Berlin et Amsterdam, nous créons
+                        des technologies qui façonnent l'avenir.
+                    </p>
+                </div>
+
+                <div class="job-section">
+                    <h3>Le Poste</h3>
+                    <p>
+                        Nous recherchons un Senior Full Stack Developer pour rejoindre notre équipe Core Platform.
+                        Vous serez responsable de l'architecture et du développement de nos systèmes critiques,
+                        travaillant avec une stack moderne et une équipe de 12 développeurs talentueux.
+                    </p>
+                </div>
+
+                <div class="job-section">
+                    <h3>Responsabilités Clés</h3>
+                    <ul>
+                        <li>Concevoir et développer des APIs RESTful scalables et performantes</li>
+                        <li>Développer des interfaces web modernes avec React/Vue.js</li>
+                        <li>Optimiser les performances des bases de données (PostgreSQL, Redis)</li>
+                        <li>Participer à la définition de l'architecture technique du projet</li>
+                        <li>Mentorer les développeurs juniors et partager vos connaissances</li>
+                        <li>Assurer la qualité du code via des code reviews et des tests automatisés</li>
+                        <li>Collaborer avec les product managers et designers pour livrer la meilleure expérience</li>
+                    </ul>
+                </div>
+
+                <div class="job-section">
+                    <h3>Profil Recherché</h3>
+                    <ul>
+                        <li><strong>5+ ans d'expérience</strong> en développement full stack</li>
+                        <li>Maîtrise de <strong>PHP/Laravel ou Python/Django</strong> (backend)</li>
+                        <li>Solides connaissances en <strong>JavaScript/TypeScript</strong> et framework frontend moderne</li>
+                        <li>Expérience avec les <strong>bases de données relationnelles</strong> (PostgreSQL, MySQL)</li>
+                        <li>Familiarité avec <strong>Docker et les déploiements en production</strong></li>
+                        <li><strong>Git et les workflows collaboratifs</strong> (CI/CD, GitHub/GitLab)</li>
+                        <li>Bonnes pratiques de <strong>sécurité web</strong> et OWASP Top 10</li>
+                        <li>Excellentes compétences en communication et travail en équipe</li>
+                    </ul>
+                </div>
+
+                <div class="job-section">
+                    <h3>Un Plus</h3>
+                    <ul>
+                        <li>Expérience avec Kubernetes ou orchestration de conteneurs</li>
+                        <li>Connaissances en microservices et architecture distribuée</li>
+                        <li>Expérience avec les tests (unit, integration, e2e)</li>
+                        <li>Contribution open source</li>
+                        <li>Expérience SaaS ou produits web à forte charge</li>
+                    </ul>
+                </div>
+
+                <div class="job-section">
+                    <h3>Ce que Nous Offrons</h3>
+                    <ul>
+                        <li>💻 Équipement de dernière génération (MacBook Pro, 2 écrans)</li>
+                        <li>🏢 Bureau moderne et confortable au cœur de Paris</li>
+                        <li>🏠 Télétravail 2-3 jours/semaine</li>
+                        <li>📚 Budget formation annuel €2,000</li>
+                        <li>🎁 Tickets restaurant, mutuelle, tickets transport</li>
+                        <li>🎉 Événements d'équipe et séminaires annuels</li>
+                        <li>💡 Liberté technologique et processus agile</li>
+                        <li>🚀 Impact direct sur le produit et la vision de l'entreprise</li>
+                    </ul>
+                </div>
+
+                <div class="job-section">
+                    <h3>Processus de Recrutement</h3>
+                    <ol>
+                        <li><strong>Entretien téléphonique (30 min)</strong> - Validation du profil et des attentes</li>
+                        <li><strong>Test technique (2h)</strong> - Exercice pratique d'algorithmique et design</li>
+                        <li><strong>Entretien technique (45 min)</strong> - Avec un Lead Developer</li>
+                        <li><strong>Entretien RH (30 min)</strong> - Avec le Directeur des Ressources Humaines</li>
+                        <li><strong>Décision (3-5 jours)</strong> - Retour de notre équipe de recrutement</li>
+                    </ol>
+                </div>
             </div>
 
-            <div class="form-section">
-                <h2>📝 Formulaire de Candidature</h2>
-                <form method="POST" action="{{ path('app_submit_web') }}">
-                    <div class="form-group">
-                        <label for="firstName">Prénom *</label>
-                        <input type="text" id="firstName" name="firstName" required>
-                    </div>
+            <div class="sidebar">
+                <h3>✨ Candidater</h3>
+                <p style="color: #555; margin-bottom: 20px;">
+                    Créez un compte pour postuler à cette offre. Vous recevrez une notification dès que nous aurons analysé votre candidature.
+                </p>
+                <a href="{{ path('app_candidate_register') }}" class="apply-btn">📝 Créer un Compte</a>
+                <p style="color: #999; font-size: 13px; text-align: center; margin-bottom: 15px;">
+                    Déjà inscrit? <a href="{{ path('app_candidate_login') }}" style="color: #667eea; text-decoration: none;">Se connecter</a>
+                </p>
 
-                    <div class="form-group">
-                        <label for="lastName">Nom *</label>
-                        <input type="text" id="lastName" name="lastName" required>
-                    </div>
+                <div class="info-box">
+                    <strong>Qui êtes-vous ?</strong><br>
+                    Nous utilisons une IA avancée pour analyser votre candidature.
+                    Si votre profil correspond à nos besoins, vous recevrez une notification automatique.
+                </div>
 
-                    <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
+                <div class="info-box">
+                    <strong>Seuil d'acceptation:</strong><br>
+                    Score minimum: <strong>80/100</strong>
+                </div>
 
-                    <div class="form-group">
-                        <label for="cvText">CV (Texte) *</label>
-                        <textarea id="cvText" name="cvText" required placeholder="Collez votre CV ici..."></textarea>
-                    </div>
-
-                    <button type="submit" class="submit-btn">Soumettre Ma Candidature</button>
-                </form>
+                <div class="info-box">
+                    <strong>🔔 Notifications</strong><br>
+                    Connectez-vous régulièrement pour voir vos notifications et le score de votre candidature.
+                </div>
             </div>
+        </div>
+
+        <div class="footer">
+            TechCorp © 2025 | Tous droits réservés | Politique de confidentialité | Conditions d'utilisation
         </div>
     </div>
 </body>

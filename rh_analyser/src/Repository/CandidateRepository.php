@@ -60,4 +60,12 @@ class CandidateRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['email' => $email]);
     }
+
+    /**
+     * Cherche par username
+     */
+    public function findByUsername(string $username): ?Candidate
+    {
+        return $this->findOneBy(['username' => $username]);
+    }
 }
