@@ -31,7 +31,7 @@
             background: rgba(255,255,255,0.3);
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -58,44 +58,168 @@
             color: #666;
             font-size: 14px;
         }
-        .candidates-table {
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .filter-btn:hover {
+            background: #f5f5f5;
+        }
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .job-section {
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
             overflow: hidden;
         }
-        .candidates-table h2 {
-            background: #f5f5f5;
+        .job-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             padding: 20px;
-            color: #333;
-            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .job-title {
+            flex: 1;
         }
-        th {
-            background: #f5f5f5;
-            padding: 15px;
-            text-align: left;
-            color: #333;
-            font-weight: 600;
-            border-bottom: 1px solid #ddd;
+        .job-title h2 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .job-title p {
             font-size: 14px;
+            opacity: 0.9;
+            margin: 0;
         }
-        td {
-            padding: 15px;
+        .job-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .job-stat {
+            text-align: center;
+        }
+        .job-stat .number {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+        .job-stat .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .batch-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 20px;
+        }
+        .batch-btn:hover {
+            background: #f0f0f0;
+        }
+        .batch-btn.empty {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .candidates-list {
+            padding: 0;
+        }
+        .candidate-row {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
             border-bottom: 1px solid #f0f0f0;
-            font-size: 14px;
+            transition: background 0.3s;
         }
-        tr:hover {
+        .candidate-row:hover {
             background: #f9f9f9;
+        }
+        .candidate-row:last-child {
+            border-bottom: none;
+        }
+        .candidate-info {
+            flex: 1;
+        }
+        .candidate-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        .candidate-email {
+            font-size: 13px;
+            color: #666;
+        }
+        .candidate-status {
+            flex: 0 0 150px;
+            text-align: center;
+        }
+        .candidate-score {
+            flex: 0 0 120px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .candidate-score.high {
+            color: #28a745;
+        }
+        .candidate-score.low {
+            color: #dc3545;
+        }
+        .candidate-score.none {
+            color: #666;
+        }
+        .candidate-actions {
+            flex: 0 0 200px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .action-btn {
+            padding: 8px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .action-btn:hover {
+            background: #764ba2;
         }
         .status-badge {
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            display: inline-block;
         }
         .status-pending {
             background: #fff3cd;
@@ -109,45 +233,39 @@
             background: #d1e7dd;
             color: #0f5132;
         }
-        .score {
-            font-weight: bold;
-            color: #667eea;
-        }
-        .action-btn {
-            padding: 8px 12px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 5px;
-        }
-        .action-btn:hover {
-            background: #764ba2;
-        }
-        .action-btn.delete {
-            background: #dc3545;
-        }
-        .action-btn.delete:hover {
-            background: #c82333;
-        }
         .empty {
             text-align: center;
             padding: 40px;
             color: #999;
         }
+        .alerts {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .alert.success {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
         @media (max-width: 768px) {
             .stats {
                 grid-template-columns: 1fr;
             }
-            table {
-                font-size: 12px;
+            .candidate-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            td, th {
-                padding: 10px;
+            .candidate-status, .candidate-score, .candidate-actions {
+                flex: 1;
+                width: 100%;
+                margin-top: 10px;
             }
         }
     </style>
@@ -159,6 +277,15 @@
     </header>
 
     <div class="container">
+        <div class="alerts">
+            {% for message in app.flashes('success') %}
+                <div class="alert success">✅ {{ message }}</div>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="alert error">❌ {{ message }}</div>
+            {% endfor %}
+        </div>
+
         <div class="stats">
             <div class="stat-card">
                 <div class="label">Total Candidats</div>
@@ -166,34 +293,58 @@
             </div>
             <div class="stat-card">
                 <div class="label">En Attente</div>
-                <div class="number" style="color: #ffc107;">{{ pendingCount }}</div>
+                <div class="number" style="color: #ffc107;">{{ totalPending }}</div>
             </div>
             <div class="stat-card">
                 <div class="label">Analysés</div>
-                <div class="number" style="color: #28a745;">{{ analyzedCount }}</div>
+                <div class="number" style="color: #28a745;">{{ totalAnalyzed }}</div>
             </div>
         </div>
 
-        <div class="candidates-table">
-            <h2>📋 Candidatures</h2>
-            {% if candidates|length > 0 %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Statut</th>
-                            <th>Score</th>
-                            <th>Soumise</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for candidate in candidates %}
-                            <tr>
-                                <td>{{ candidate.firstName }} {{ candidate.lastName }}</td>
-                                <td>{{ candidate.email }}</td>
-                                <td>
+        <div class="filters">
+            <strong>Filtrer:</strong>
+            <a href="?filter=all" class="filter-btn {% if currentFilter == 'all' %}active{% endif %}">Tous</a>
+            <a href="?filter=pending" class="filter-btn {% if currentFilter == 'pending' %}active{% endif %}">⏳ En Attente</a>
+            <a href="?filter=analyzed" class="filter-btn {% if currentFilter == 'analyzed' %}active{% endif %}">✅ Analysés</a>
+        </div>
+
+        {% if candidatesByJob|length > 0 %}
+            {% for jobId, jobData in candidatesByJob %}
+                <div class="job-section">
+                    <div class="job-header">
+                        <div class="job-title">
+                            <h2>{{ jobData.job.title }}</h2>
+                            <p>{{ jobData.job.description|slice(0, 100) }}...</p>
+                        </div>
+                        <div class="job-stats">
+                            <div class="job-stat">
+                                <span class="number">{{ jobData.total }}</span>
+                                <span class="label">Total</span>
+                            </div>
+                            <div class="job-stat">
+                                <span class="number" style="color: #ffc107;">{{ jobData.pending }}</span>
+                                <span class="label">En Attente</span>
+                            </div>
+                            <div class="job-stat">
+                                <span class="number" style="color: #d4edda;">{{ jobData.analyzed }}</span>
+                                <span class="label">Analysés</span>
+                            </div>
+                        </div>
+                        {% if jobData.pending > 0 and currentFilter != 'analyzed' %}
+                            <form method="POST" action="{{ path('admin_analyze_batch', {jobId: jobData.job.id}) }}" style="display: inline;">
+                                <button type="submit" class="batch-btn">🚀 Analyser {{ jobData.pending }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    <div class="candidates-list">
+                        {% for candidate in jobData.candidates %}
+                            <div class="candidate-row">
+                                <div class="candidate-info">
+                                    <div class="candidate-name">{{ candidate.firstName }} {{ candidate.lastName }}</div>
+                                    <div class="candidate-email">{{ candidate.email }}</div>
+                                </div>
+                                <div class="candidate-status">
                                     <span class="status-badge status-{{ candidate.status }}">
                                         {% if candidate.status == 'pending' %}
                                             ⏳ En attente
@@ -203,30 +354,29 @@
                                             ✅ Analysée
                                         {% endif %}
                                     </span>
-                                </td>
-                                <td>
+                                </div>
+                                <div class="candidate-score {% if candidate.score >= 80 %}high{% elseif candidate.score %}low{% else %}none{% endif %}">
                                     {% if candidate.score %}
-                                        <span class="score">{{ candidate.score }}/100</span>
+                                        {{ candidate.score }}/100
                                     {% else %}
                                         -
                                     {% endif %}
-                                </td>
-                                <td>{{ candidate.submittedAt.format('d/m/Y') }}</td>
-                                <td>
-                                    <a href="{{ path('admin_view_candidate', {id: candidate.id}) }}" class="action-btn">
-                                        👁️ Voir
-                                    </a>
-                                </td>
-                            </tr>
+                                </div>
+                                <div class="candidate-actions">
+                                    <a href="{{ path('admin_view_candidate', {id: candidate.id}) }}" class="action-btn">👁️ Voir</a>
+                                </div>
+                            </div>
                         {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <div class="empty">
-                    Aucune candidature pour le moment.
+                    </div>
                 </div>
-            {% endif %}
-        </div>
+            {% endfor %}
+        {% else %}
+            <div class="job-section">
+                <div class="empty">
+                    Aucune candidature correspondant aux filtres.
+                </div>
+            </div>
+        {% endif %}
     </div>
 </body>
 </html>
