@@ -16,6 +16,7 @@ class GeminiAnalysisService
 {
     private FilesystemAdapter $cache;
     private string $geminiApiKey;
+    private string $projectDir;
     private const CACHE_TTL = 86400; // 24 heures
 
     public function __construct(
@@ -24,8 +25,10 @@ class GeminiAnalysisService
         private string $geminiModel,
         private float $geminiTemperature,
         private int $geminiMaxTokens,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        string $projectDir
     ) {
+        $this->projectDir = $projectDir;
         $this->geminiApiKey = trim($geminiApiKey);
         if (empty($this->geminiApiKey)) {
             throw new \RuntimeException('Missing GEMINI_API_KEY environment variable');
@@ -294,8 +297,7 @@ PROMPT;
     private function logCvDebug(string $cv, string $jobDescription): void
     {
         try {
-            $debugDir = $this->getParameter('kernel.project_dir') . '/var';
-            $debugFile = $debugDir . '/cv_debug.log';
+            $debugFile = $this->projectDir . '/var/cv_debug.log';
 
             $timestamp = date('Y-m-d H:i:s');
             $cvLength = strlen($cv);

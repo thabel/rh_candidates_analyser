@@ -26,6 +26,7 @@ services:
             $geminiModel: '%env(GEMINI_MODEL)%'
             $geminiTemperature: '%env(float:GEMINI_TEMPERATURE)%'
             $geminiMaxTokens: '%env(int:GEMINI_MAX_TOKENS)%'
+            $projectDir: '%kernel.project_dir%'
 
     # HTTP Client for Gemini
     Symfony\Contracts\HttpClient\HttpClientInterface: '@http_client'

@@ -323,17 +323,42 @@ class CandidateAuthController extends AbstractController
             $cvFile->move($uploadsDir, $fileName);
             $filePath = $uploadsDir . '/' . $fileName;
 
-            // Extract text from PDF
-            try {
-                $cvText = $this->pdfExtractor->extractText($filePath);
-                $this->logger->info('Texte du CV extrait', [
+            // Vérifier que le fichier a bien été créé
+            if (!file_exists($filePath)) {
+                $this->logger->error('Fichier PDF non trouvé après déplacement', [
                     'candidate_id' => $candidateId,
-                    'text_length' => strlen($cvText)
+                    'filePath' => $filePath
+                ]);
+                return $this->json(['success' => false, 'message' => 'Erreur: le fichier n\'a pas pu être sauvegardé'], 500);
+            }
+
+            $this->logger->info('Fichier PDF créé avec succès', [
+                'candidate_id' => $candidateId,
+                'filePath' => $filePath,
+                'fileSize' => filesize($filePath)
+            ]);
+
+            // Extract text from PDF
+            $cvText = '';
+            try {
+                $this->logger->info('Début extraction PDF', [
+                    'candidate_id' => $candidateId,
+                    'filePath' => $filePath
+                ]);
+
+                $cvText = $this->pdfExtractor->extractText($filePath);
+
+                $this->logger->info('Texte du CV extrait avec succès', [
+                    'candidate_id' => $candidateId,
+                    'text_length' => strlen($cvText),
+                    'first_100_chars' => substr($cvText, 0, 100)
                 ]);
             } catch (\Exception $e) {
                 $this->logger->error('Erreur extraction texte PDF', [
                     'candidate_id' => $candidateId,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'error_class' => get_class($e),
+                    'trace' => $e->getTraceAsString()
                 ]);
                 $cvText = ''; // Fallback à texte vide
             }
