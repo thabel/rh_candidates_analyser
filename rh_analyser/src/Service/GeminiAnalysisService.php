@@ -48,6 +48,9 @@ class GeminiAnalysisService
         $cv = $this->truncateText($cv, 4000);
         $jobDescription = $this->truncateText($jobDescription, 2000);
 
+        // DEBUG: Log le CV envoyé à Gemini dans un fichier
+        $this->logCvDebug($cv, $jobDescription);
+
         // Générer une clé de cache basée sur les inputs
         $cacheKey = hash('sha256', $jobDescription . '::' . $cv);
 
@@ -282,6 +285,50 @@ PROMPT;
             'positives' => array_values($positives),
             'negatives' => array_values($negatives)
         ];
+    }
+
+    /**
+     * Log le CV envoyé à Gemini dans un fichier de debug
+     * Fichier: var/cv_debug.log (non inclus dans git)
+     */
+    private function logCvDebug(string $cv, string $jobDescription): void
+    {
+        try {
+            $debugDir = $this->getParameter('kernel.project_dir') . '/var';
+            $debugFile = $debugDir . '/cv_debug.log';
+
+            $timestamp = date('Y-m-d H:i:s');
+            $cvLength = strlen($cv);
+            $jobLength = strlen($jobDescription);
+
+            $logContent = <<<LOG
+================================================================================
+[{$timestamp}] DEBUG - CV ENVOYÉ À GEMINI
+================================================================================
+
+📄 LONGUEUR DU CV: {$cvLength} caractères
+📋 LONGUEUR FICHE DE POSTE: {$jobLength} caractères
+
+--- CV CONTENT (Premiers 2000 caractères) ---
+{$cv}
+--- FIN CV ---
+
+--- FICHE DE POSTE (Premiers 1000 caractères) ---
+{$jobDescription}
+--- FIN FICHE ---
+
+================================================================================
+
+LOG;
+
+            file_put_contents($debugFile, $logContent, FILE_APPEND);
+            chmod($debugFile, 0666);
+
+        } catch (\Exception $e) {
+            $this->logger->warning('Impossible d\'écrire le fichier de debug', [
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
