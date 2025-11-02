@@ -150,19 +150,48 @@
             </div>
         {% endif %}
 
-        {% if not candidate.cvFileName %}
-            <div class="card">
-                <h2>📄 Télécharger votre CV (PDF)</h2>
+        <div class="card">
+            <h2>📋 Postuler à une Offre</h2>
+
+            {% if candidate.jobDescription %}
+                <div style="background: #d1e7dd; border-left: 4px solid #28a745; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                    <strong style="color: #0f5132;">✅ Offre Actuelle:</strong><br>
+                    <div style="color: #0f5132; margin-top: 8px;">
+                        <h3 style="margin: 0; color: #0f5132;">{{ candidate.jobDescription.title }}</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 0.95em;">Vous êtes en train de postuler pour cette offre</p>
+                    </div>
+                </div>
+
+                {% if not candidate.cvFileName %}
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #333; margin-bottom: 15px;">📄 Télécharger votre CV (PDF)</h3>
+                        <p style="color: #555; margin-bottom: 15px;">
+                            Veuillez télécharger votre CV en format PDF pour cette offre.
+                        </p>
+                        <form id="cvUploadForm" style="display: flex; gap: 10px; align-items: flex-start;">
+                            <input type="file" id="cvFile" name="cvFile" accept=".pdf" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer;">
+                            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">📤 Télécharger</button>
+                        </form>
+                        <div id="uploadStatus" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                {% else %}
+                    <div style="background: #cfe2ff; border-left: 4px solid #084298; padding: 15px; border-radius: 5px;">
+                        <strong style="color: #084298;">✅ CV Téléchargé</strong><br>
+                        <p style="color: #084298; margin: 5px 0 0 0;">{{ candidate.cvFileName }}</p>
+                    </div>
+                {% endif %}
+            {% else %}
                 <p style="color: #555; margin-bottom: 20px;">
-                    Veuillez télécharger votre CV en format PDF pour soumettre votre candidature.
+                    Choisissez une offre d'emploi pour postuler.
                 </p>
-                <form id="cvUploadForm" style="display: flex; gap: 10px; align-items: center;">
-                    <input type="file" id="cvFile" name="cvFile" accept=".pdf" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer;">
-                    <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">📤 Télécharger</button>
-                </form>
-                <div id="uploadStatus" style="margin-top: 15px; display: none;"></div>
-            </div>
-        {% endif %}
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #333; margin-bottom: 15px;">📌 Offres Disponibles</h3>
+                    <div id="jobsList" style="display: grid; gap: 15px;">
+                        <!-- Loaded by JavaScript -->
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
         {% if candidate.status == 'pending' %}
             <div class="card" style="text-align: center; padding: 40px;">
@@ -175,6 +204,61 @@
     </div>
 
 <script>
+// Load available jobs if candidate hasn't selected one yet
+const jobsList = document.getElementById('jobsList');
+if (jobsList) {
+    loadAvailableJobs();
+}
+
+async function loadAvailableJobs() {
+    try {
+        const response = await fetch('{{ path("app_candidate_get_jobs") }}');
+        const jobs = await response.json();
+
+        if (jobs.length === 0) {
+            jobsList.innerHTML = '<p style="color: #999;">Aucune offre disponible pour le moment.</p>';
+            return;
+        }
+
+        jobsList.innerHTML = jobs.map(job => `
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 4px solid #667eea; cursor: pointer;" onclick="selectJob(${job.id}, '${job.title}')">
+                <h3 style="margin: 0 0 8px 0; color: #667eea;">${job.title}</h3>
+                <p style="margin: 0; color: #555; font-size: 0.95em; line-height: 1.5;">${job.description.substring(0, 150)}...</p>
+                <button style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Postuler pour cette offre</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erreur chargement offres:', error);
+        jobsList.innerHTML = '<p style="color: #dc3545;">Erreur lors du chargement des offres.</p>';
+    }
+}
+
+async function selectJob(jobId, jobTitle) {
+    try {
+        const response = await fetch('{{ path("app_candidate_select_job") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ jobId: jobId })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || 'Erreur lors de la sélection');
+            return;
+        }
+
+        // Reload page to show CV upload form
+        window.location.reload();
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la sélection de l\'offre');
+    }
+}
+
+// CV Upload form
 const cvUploadForm = document.getElementById('cvUploadForm');
 if (cvUploadForm) {
     cvUploadForm.addEventListener('submit', async (e) => {

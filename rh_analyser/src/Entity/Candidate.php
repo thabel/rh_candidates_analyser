@@ -6,6 +6,7 @@ use App\Repository\CandidateRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: CandidateRepository::class)]
 #[ORM\Table(name: 'candidates')]
@@ -62,6 +63,10 @@ class Candidate
 
     #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'candidate', cascade: ['remove'])]
     private Collection $notifications;
+
+    #[ORM\ManyToOne(targetEntity: JobDescription::class)]
+    #[ORM\JoinColumn(name: 'job_description_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?JobDescription $jobDescription = null;
 
     public function __construct()
     {
@@ -284,5 +289,16 @@ class Candidate
     public function getFullName(): string
     {
         return "{$this->firstName} {$this->lastName}";
+    }
+
+    public function getJobDescription(): ?JobDescription
+    {
+        return $this->jobDescription;
+    }
+
+    public function setJobDescription(?JobDescription $jobDescription): static
+    {
+        $this->jobDescription = $jobDescription;
+        return $this;
     }
 }

@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Candidate;
 use App\Entity\JobDescription;
 use App\Service\AuthService;
+use Doctrine\Common\Collections\Collection;
 use App\Service\GeminiAnalysisService;
 use App\Service\NotificationService;
 use App\Exception\GeminiException;
@@ -67,26 +68,59 @@ class AdminDashboardController extends AbstractController
     }
 
     /**
-     * Tableau de bord principal
+     * Tableau de bord principal - groupé par offre d'emploi
      */
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
-    public function dashboard(): Response
+    public function dashboard(Request $request): Response
     {
         $auth = $this->checkAuth();
         if ($auth) return $auth;
 
-        $candidates = $this->entityManager->getRepository(Candidate::class)
-            ->findAllWithLatest();
+        $jobId = $request->query->get('job');
+        $filter = $request->query->get('filter', 'all'); // all, analyzed, pending
 
-        $totalCandidates = count($candidates);
-        $pendingCount = count(array_filter($candidates, fn($c) => $c->getStatus() === 'pending'));
-        $analyzedCount = count(array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed'));
+        // Get all active jobs
+        $jobs = $this->entityManager->getRepository(JobDescription::class)
+            ->findBy(['isActive' => true]);
+
+        // Group candidates by job
+        $candidatesByJob = [];
+        foreach ($jobs as $job) {
+            $candidates = $this->entityManager->getRepository(Candidate::class)
+                ->findBy(['jobDescription' => $job]);
+
+            // Apply filter
+            if ($filter === 'analyzed') {
+                $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed');
+            } elseif ($filter === 'pending') {
+                $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'pending');
+            }
+
+            if (!empty($candidates)) {
+                $candidatesByJob[$job->getId()] = [
+                    'job' => $job,
+                    'candidates' => $candidates,
+                    'total' => count($candidates),
+                    'analyzed' => count(array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed')),
+                    'pending' => count(array_filter($candidates, fn($c) => $c->getStatus() === 'pending')),
+                ];
+            }
+        }
+
+        // Calculate totals
+        $allCandidates = $this->entityManager->getRepository(Candidate::class)->findAll();
+        $totalCandidates = count($allCandidates);
+        $totalAnalyzed = count(array_filter($allCandidates, fn($c) => $c->getStatus() === 'analyzed'));
+        $totalPending = count(array_filter($allCandidates, fn($c) => $c->getStatus() === 'pending'));
 
         return $this->render('admin/dashboard.html.twig', [
-            'candidates' => $candidates,
+            'candidatesByJob' => $candidatesByJob,
+            'jobs' => $jobs,
             'totalCandidates' => $totalCandidates,
-            'pendingCount' => $pendingCount,
-            'analyzedCount' => $analyzedCount,
+            'totalAnalyzed' => $totalAnalyzed,
+            'totalPending' => $totalPending,
+            'currentFilter' => $filter,
+            'selectedJobId' => $jobId,
         ]);
     }
 
@@ -111,7 +145,7 @@ class AdminDashboardController extends AbstractController
     }
 
     /**
-     * Analyser un candidat
+     * Analyser un candidat - utilise la job description déjà liée
      */
     #[Route('/candidate/{id}/analyze', name: 'analyze_candidate_web', methods: ['POST'])]
     public function analyzeCandidate(string $id, Request $request): Response
@@ -126,10 +160,8 @@ class AdminDashboardController extends AbstractController
             return $this->redirectToRoute('admin_dashboard');
         }
 
-        $jobDescription = $request->request->get('jobDescription');
-
-        if (!$jobDescription) {
-            $this->addFlash('error', 'Fiche de poste obligatoire');
+        if (!$candidate->getJobDescription()) {
+            $this->addFlash('error', 'Aucune offre liée à ce candidat');
             return $this->redirectToRoute('admin_view_candidate', ['id' => $id]);
         }
 
@@ -137,9 +169,12 @@ class AdminDashboardController extends AbstractController
             $candidate->setStatus('analyzing');
             $this->entityManager->flush();
 
+            $jobDescription = $candidate->getJobDescription()->getDescription();
+            $cvText = $candidate->getCvFileName() ?? '';
+
             $this->logger->info('Analyse lancée', ['candidateId' => $id]);
 
-            $result = $this->geminiService->analyzeCandidate($jobDescription, $candidate->getCvText());
+            $result = $this->geminiService->analyzeCandidate($jobDescription, $cvText);
 
             $candidate->setAnalysisResult($result);
             $candidate->setScore($result['score'] ?? null);
@@ -174,6 +209,72 @@ class AdminDashboardController extends AbstractController
 
             return $this->redirectToRoute('admin_view_candidate', ['id' => $id]);
         }
+    }
+
+    /**
+     * Analyser tous les candidats d'une offre (batch)
+     */
+    #[Route('/job/{jobId}/analyze-batch', name: 'analyze_batch', methods: ['POST'])]
+    public function analyzeBatch(int $jobId): Response
+    {
+        $auth = $this->checkAuth();
+        if ($auth) return $auth;
+
+        $job = $this->entityManager->getRepository(JobDescription::class)->find($jobId);
+
+        if (!$job) {
+            $this->addFlash('error', 'Offre non trouvée');
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
+        // Get all pending candidates for this job
+        $candidates = $this->entityManager->getRepository(Candidate::class)
+            ->findBy(['jobDescription' => $job, 'status' => 'pending']);
+
+        $analyzed = 0;
+        $failed = 0;
+
+        foreach ($candidates as $candidate) {
+            try {
+                $candidate->setStatus('analyzing');
+                $this->entityManager->flush();
+
+                $jobDescription = $job->getDescription();
+                $cvText = $candidate->getCvFileName() ?? '';
+
+                $result = $this->geminiService->analyzeCandidate($jobDescription, $cvText);
+
+                $candidate->setAnalysisResult($result);
+                $candidate->setScore($result['score'] ?? null);
+                $candidate->setStatus('analyzed');
+                $candidate->setAnalyzedAt(new \DateTimeImmutable());
+                $this->entityManager->flush();
+
+                // Send notifications
+                if ($result['score'] ?? 0 >= 80) {
+                    $this->notificationService->notifyIfQualified($candidate, $result['score']);
+                } else {
+                    $this->notificationService->notifyIfRejected($candidate, $result['score']);
+                }
+
+                $analyzed++;
+                $this->logger->info('Analyse batch réussie', ['candidateId' => $candidate->getId(), 'score' => $result['score']]);
+
+            } catch (\Exception $e) {
+                $candidate->setStatus('pending');
+                $this->entityManager->flush();
+                $failed++;
+                $this->logger->error('Erreur analyse batch: ' . $e->getMessage());
+            }
+        }
+
+        $message = "Analyse terminée: $analyzed candidats analysés";
+        if ($failed > 0) {
+            $message .= ", $failed erreurs";
+        }
+
+        $this->addFlash('success', $message);
+        return $this->redirectToRoute('admin_dashboard', ['filter' => 'pending']);
     }
 
     /**

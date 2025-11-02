@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
 use App\Entity\Candidate;
+use App\Entity\JobDescription;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -183,6 +184,74 @@ class CandidateAuthController extends AbstractController
     }
 
     /**
+     * Get available job offers
+     */
+    #[Route('/get-jobs', name: 'app_candidate_get_jobs', methods: ['GET'])]
+    public function getJobs(): Response
+    {
+        $jobs = $this->entityManager->getRepository(JobDescription::class)
+            ->findBy(['isActive' => true]);
+
+        $data = array_map(fn($job) => [
+            'id' => $job->getId(),
+            'title' => $job->getTitle(),
+            'description' => $job->getDescription(),
+        ], $jobs);
+
+        return $this->json($data);
+    }
+
+    /**
+     * Select a job offer to apply to
+     */
+    #[Route('/select-job', name: 'app_candidate_select_job', methods: ['POST'])]
+    public function selectJob(Request $request): Response
+    {
+        $session = $request->getSession();
+        if (!$session->has('candidate_id')) {
+            return $this->json(['success' => false, 'message' => 'Non authentifié'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $jobId = $data['jobId'] ?? null;
+
+        if (!$jobId) {
+            return $this->json(['success' => false, 'message' => 'Offre requise'], 400);
+        }
+
+        $job = $this->entityManager->getRepository(JobDescription::class)->find($jobId);
+        if (!$job || !$job->isActive()) {
+            return $this->json(['success' => false, 'message' => 'Offre non trouvée'], 404);
+        }
+
+        $candidate = $this->entityManager->getRepository(Candidate::class)
+            ->find($session->get('candidate_id'));
+
+        if (!$candidate) {
+            return $this->json(['success' => false, 'message' => 'Candidat non trouvé'], 404);
+        }
+
+        try {
+            $candidate->setJobDescription($job);
+            $this->entityManager->flush();
+
+            $this->logger->info('Offre sélectionnée', [
+                'candidateId' => $candidate->getId(),
+                'jobId' => $jobId,
+                'jobTitle' => $job->getTitle()
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Offre sélectionnée avec succès'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur sélection offre: ' . $e->getMessage());
+            return $this->json(['success' => false, 'message' => 'Erreur serveur'], 500);
+        }
+    }
+
+    /**
      * Upload CV PDF
      */
     #[Route('/upload-cv', name: 'app_candidate_upload_cv', methods: ['POST'])]
@@ -238,17 +307,6 @@ class CandidateAuthController extends AbstractController
             $candidate->setCvFileName($fileName);
             $candidate->setStatus('pending');
 
-            // Try to extract text from PDF for analysis
-            try {
-                $pdfPath = $uploadsDir . '/' . $fileName;
-                $pdfText = $this->extractTextFromPdf($pdfPath);
-                if ($pdfText && strlen($pdfText) >= 50) {
-                    $candidate->setCvText($pdfText);
-                }
-            } catch (\Exception $e) {
-                $this->logger->warning('Could not extract text from PDF: ' . $e->getMessage());
-            }
-
             $this->entityManager->persist($candidate);
             $this->entityManager->flush();
 
@@ -298,23 +356,6 @@ class CandidateAuthController extends AbstractController
         }
 
         return $this->file($filePath);
-    }
-
-    /**
-     * Extract text from PDF (simple implementation)
-     */
-    private function extractTextFromPdf(string $filePath): ?string
-    {
-        // Try using pdftotext if available
-        $cmd = "pdftotext '" . escapeshellarg($filePath) . "' -";
-        $output = shell_exec($cmd);
-
-        if ($output !== null) {
-            return trim($output);
-        }
-
-        // Fallback: return partial content
-        return null;
     }
 
     /**
