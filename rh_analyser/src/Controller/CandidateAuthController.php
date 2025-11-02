@@ -331,7 +331,7 @@ class CandidateAuthController extends AbstractController
     public function viewCv(string $id, Request $request): Response
     {
         $session = $request->getSession();
-        $isAdmin = $request->getSession()->has('admin_logged_in');
+        $isAdmin = $session->has('admin_id');
         $isCandidate = $session->has('candidate_id') && $session->get('candidate_id') === $id;
 
         // Only admin or the candidate themselves can view
@@ -364,7 +364,7 @@ class CandidateAuthController extends AbstractController
     public function downloadCv(string $id, Request $request): Response
     {
         $session = $request->getSession();
-        $isAdmin = $request->getSession()->has('admin_logged_in');
+        $isAdmin = $session->has('admin_id');
         $isCandidate = $session->has('candidate_id') && $session->get('candidate_id') === $id;
 
         // Only admin or the candidate themselves can download
