@@ -75,6 +75,20 @@
                     <div class="info-value">{{ candidate.submittedAt.format('d/m/Y H:i') }}</div>
                 </div>
 
+                <div class="info-item" style="margin-top: 20px;">
+                    <div class="info-label">CV PDF</div>
+                    {% if candidate.cvFileName %}
+                        <div class="info-value" style="color: #28a745;">
+                            ✅ {{ candidate.cvFileName }}
+                        </div>
+                        <a href="{{ path('app_candidate_download_cv', {'id': candidate.id}) }}" style="color: #667eea; text-decoration: none; display: inline-block; margin-top: 8px;">📥 Télécharger</a>
+                    {% else %}
+                        <div class="info-value" style="color: #dc3545;">
+                            ❌ Aucun CV téléchargé
+                        </div>
+                    {% endif %}
+                </div>
+
                 {% if candidate.score is not null %}
                     <div class="info-item" style="margin-top: 20px;">
                         <div class="info-label">Score Obtenu</div>
@@ -136,6 +150,20 @@
             </div>
         {% endif %}
 
+        {% if not candidate.cvFileName %}
+            <div class="card">
+                <h2>📄 Télécharger votre CV (PDF)</h2>
+                <p style="color: #555; margin-bottom: 20px;">
+                    Veuillez télécharger votre CV en format PDF pour soumettre votre candidature.
+                </p>
+                <form id="cvUploadForm" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="cvFile" name="cvFile" accept=".pdf" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer;">
+                    <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">📤 Télécharger</button>
+                </form>
+                <div id="uploadStatus" style="margin-top: 15px; display: none;"></div>
+            </div>
+        {% endif %}
+
         {% if candidate.status == 'pending' %}
             <div class="card" style="text-align: center; padding: 40px;">
                 <p style="color: #555; margin-bottom: 20px;">
@@ -145,5 +173,64 @@
             </div>
         {% endif %}
     </div>
+
+<script>
+const cvUploadForm = document.getElementById('cvUploadForm');
+if (cvUploadForm) {
+    cvUploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const cvFile = document.getElementById('cvFile').files[0];
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        if (!cvFile) {
+            uploadStatus.style.display = 'block';
+            uploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Veuillez sélectionner un fichier PDF</div>';
+            return;
+        }
+
+        if (cvFile.type !== 'application/pdf') {
+            uploadStatus.style.display = 'block';
+            uploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Le fichier doit être au format PDF</div>';
+            return;
+        }
+
+        if (cvFile.size > 5 * 1024 * 1024) { // 5MB limit
+            uploadStatus.style.display = 'block';
+            uploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Le fichier ne doit pas dépasser 5MB</div>';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('cvFile', cvFile);
+
+        try {
+            uploadStatus.style.display = 'block';
+            uploadStatus.innerHTML = '<div style="color: #084298; padding: 10px; background: #cfe2ff; border-radius: 5px;">⏳ Téléchargement en cours...</div>';
+
+            const response = await fetch('{{ path("app_candidate_upload_cv") }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Erreur lors du téléchargement');
+            }
+
+            uploadStatus.innerHTML = '<div style="color: #0f5132; padding: 10px; background: #d1e7dd; border-radius: 5px;">✅ ' + data.message + '</div>';
+
+            // Reload page after 2 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+
+        } catch (error) {
+            uploadStatus.innerHTML = '<div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ ' + error.message + '</div>';
+        }
+    });
+}
+</script>
 </body>
 </html>

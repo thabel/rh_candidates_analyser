@@ -31,7 +31,6 @@ class CandidateAuthController extends AbstractController
             $username = $request->request->get('username');
             $password = $request->request->get('password');
             $confirmPassword = $request->request->get('confirmPassword');
-            $cvText = $request->request->get('cvText');
 
             // Validations
             $errors = [];
@@ -54,9 +53,6 @@ class CandidateAuthController extends AbstractController
             if ($password !== $confirmPassword) {
                 $errors[] = 'Les mots de passe ne correspondent pas';
             }
-            if (!$cvText || strlen($cvText) < 100) {
-                $errors[] = 'CV obligatoire (min 100 caractères)';
-            }
 
             // Vérifier unicité
             $existing = $this->entityManager->getRepository(Candidate::class)
@@ -78,8 +74,6 @@ class CandidateAuthController extends AbstractController
                     $candidate->setLastName($lastName);
                     $candidate->setEmail($email);
                     $candidate->setUsername($username);
-                    $candidate->setCvText($cvText);
-                    $candidate->setCvFileName('cv.txt');
 
                     // Hash password
                     $factory = new PasswordHasherFactory(['common' => ['algorithm' => 'bcrypt']]);
@@ -186,6 +180,135 @@ class CandidateAuthController extends AbstractController
             'candidate' => $candidate,
             'notifications' => $notifications,
         ]);
+    }
+
+    /**
+     * Upload CV PDF
+     */
+    #[Route('/upload-cv', name: 'app_candidate_upload_cv', methods: ['POST'])]
+    public function uploadCv(Request $request): Response
+    {
+        $session = $request->getSession();
+        if (!$session->has('candidate_id')) {
+            return $this->json(['success' => false, 'message' => 'Non authentifié'], 401);
+        }
+
+        $candidateId = $session->get('candidate_id');
+        $candidate = $this->entityManager->getRepository(Candidate::class)->find($candidateId);
+
+        if (!$candidate) {
+            return $this->json(['success' => false, 'message' => 'Candidat non trouvé'], 404);
+        }
+
+        try {
+            $cvFile = $request->files->get('cvFile');
+
+            if (!$cvFile) {
+                return $this->json(['success' => false, 'message' => 'Aucun fichier sélectionné'], 400);
+            }
+
+            if ($cvFile->getMimeType() !== 'application/pdf') {
+                return $this->json(['success' => false, 'message' => 'Le fichier doit être au format PDF'], 400);
+            }
+
+            if ($cvFile->getSize() > 5 * 1024 * 1024) {
+                return $this->json(['success' => false, 'message' => 'Le fichier ne doit pas dépasser 5MB'], 400);
+            }
+
+            // Create uploads directory if not exists
+            $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/cv';
+            if (!is_dir($uploadsDir)) {
+                mkdir($uploadsDir, 0755, true);
+            }
+
+            // Generate unique filename
+            $originalFileName = $cvFile->getClientOriginalName();
+            $fileName = $candidate->getId() . '_' . time() . '_' . pathinfo($originalFileName, PATHINFO_FILENAME) . '.pdf';
+
+            // Move file
+            $cvFile->move($uploadsDir, $fileName);
+
+            // Update candidate
+            $candidate->setCvFileName($fileName);
+            $candidate->setStatus('pending');
+
+            // Try to extract text from PDF for analysis
+            try {
+                $pdfPath = $uploadsDir . '/' . $fileName;
+                $pdfText = $this->extractTextFromPdf($pdfPath);
+                if ($pdfText && strlen($pdfText) >= 50) {
+                    $candidate->setCvText($pdfText);
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Could not extract text from PDF: ' . $e->getMessage());
+            }
+
+            $this->entityManager->persist($candidate);
+            $this->entityManager->flush();
+
+            $this->logger->info('CV téléchargé', ['candidate_id' => $candidateId, 'filename' => $fileName]);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'CV téléchargé avec succès! Votre candidature va être analysée.'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur upload CV: ' . $e->getMessage());
+            return $this->json(['success' => false, 'message' => 'Erreur lors du téléchargement'], 500);
+        }
+    }
+
+    /**
+     * Download CV PDF
+     */
+    #[Route('/download-cv/{id}', name: 'app_candidate_download_cv', methods: ['GET'])]
+    public function downloadCv(string $id, Request $request): Response
+    {
+        $session = $request->getSession();
+        if (!$session->has('candidate_id')) {
+            return $this->redirectToRoute('app_candidate_login');
+        }
+
+        // Ensure candidate can only download their own CV
+        if ($session->get('candidate_id') !== $id) {
+            $this->addFlash('error', 'Accès non autorisé');
+            return $this->redirectToRoute('app_candidate_dashboard');
+        }
+
+        $candidate = $this->entityManager->getRepository(Candidate::class)->find($id);
+
+        if (!$candidate || !$candidate->getCvFileName()) {
+            $this->addFlash('error', 'CV non trouvé');
+            return $this->redirectToRoute('app_candidate_dashboard');
+        }
+
+        $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/cv';
+        $filePath = $uploadsDir . '/' . $candidate->getCvFileName();
+
+        if (!file_exists($filePath)) {
+            $this->addFlash('error', 'Fichier non trouvé');
+            return $this->redirectToRoute('app_candidate_dashboard');
+        }
+
+        return $this->file($filePath);
+    }
+
+    /**
+     * Extract text from PDF (simple implementation)
+     */
+    private function extractTextFromPdf(string $filePath): ?string
+    {
+        // Try using pdftotext if available
+        $cmd = "pdftotext '" . escapeshellarg($filePath) . "' -";
+        $output = shell_exec($cmd);
+
+        if ($output !== null) {
+            return trim($output);
+        }
+
+        // Fallback: return partial content
+        return null;
     }
 
     /**
