@@ -30,7 +30,7 @@ class Candidate
     #[ORM\Column(type: 'string', length: 255)]
     private ?string $password = null;
 
-    #[ORM\Column(type: 'text')]
+    #[ORM\Column(type: 'text', nullable: true)]
     private ?string $cvText = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
