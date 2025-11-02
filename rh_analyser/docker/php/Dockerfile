@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libzip-dev \
-    default-mysql-client \
+    libmariadb-dev \
     && docker-php-ext-install pdo pdo_mysql zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
