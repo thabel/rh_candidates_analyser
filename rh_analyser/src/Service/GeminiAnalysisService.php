@@ -53,7 +53,7 @@ class GeminiAnalysisService
         try {
             $this->logger->info('Appel API Gemini', ['model' => $this->geminiModel]);
 
-            $response = $this->httpClient->request('POST', "models/{$this->geminiModel}:generateContent", [
+            $response = $this->httpClient->request('POST', "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent", [
                 'query' => ['key' => $this->geminiApiKey],
                 'json' => [
                     'contents' => [
