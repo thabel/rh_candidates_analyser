@@ -51,9 +51,20 @@ class GeminiAnalysisService
         $prompt = $this->buildPrompt($jobDescription, $cv);
 
         try {
-            $this->logger->info('Appel API Gemini', ['model' => $this->geminiModel]);
+            // Debug logging
+            $apiKeyLength = strlen($this->geminiApiKey);
+            $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
 
-            $response = $this->httpClient->request('POST', "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent", [
+            $this->logger->info('Appel API Gemini', [
+                'model' => $this->geminiModel,
+                'apiKey_length' => $apiKeyLength,
+                'apiKey_preview' => $apiKeyPreview
+            ]);
+
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent";
+            $this->logger->info('URL Gemini API', ['url' => $url]);
+
+            $response = $this->httpClient->request('POST', $url, [
                 'query' => ['key' => $this->geminiApiKey],
                 'json' => [
                     'contents' => [
@@ -79,7 +90,9 @@ class GeminiAnalysisService
 
             // Vérifier les erreurs spécifiques à Gemini
             if (!$response->getStatusCode() === 200) {
-                $this->handleGeminiError($statusCode, $data);
+                $apiKeyLength = strlen($this->geminiApiKey);
+                $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
+                $this->handleGeminiError($statusCode, $data, $apiKeyLength, $apiKeyPreview);
             }
 
             // Vérifier si la réponse a été bloquée
@@ -115,11 +128,17 @@ class GeminiAnalysisService
             return $result;
 
         } catch (HttpExceptionInterface $e) {
+            $apiKeyLength = strlen($this->geminiApiKey);
+            $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
+
             $this->logger->error('Erreur HTTP Gemini', [
                 'status' => $e->getResponse()->getStatusCode(),
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'apiKey_length' => $apiKeyLength,
+                'apiKey_preview' => $apiKeyPreview,
+                'model' => $this->geminiModel
             ]);
-            $this->handleGeminiError($e->getResponse()->getStatusCode(), []);
+            $this->handleGeminiError($e->getResponse()->getStatusCode(), [], $apiKeyLength, $apiKeyPreview);
         } catch (\JsonException $e) {
             throw new GeminiException('Erreur de parsing JSON: ' . $e->getMessage());
         }
@@ -198,7 +217,7 @@ PROMPT;
     /**
      * Gérer les erreurs spécifiques de Gemini
      */
-    private function handleGeminiError(int $statusCode, array $data): void
+    private function handleGeminiError(int $statusCode, array $data, ?int $apiKeyLength = null, ?string $apiKeyPreview = null): void
     {
         $messages = [
             400 => 'Requête invalide à Gemini (JSON malformé ou données invalides)',
@@ -210,9 +229,16 @@ PROMPT;
 
         $message = $messages[$statusCode] ?? "Erreur Gemini ($statusCode)";
 
+        // Add API key debug info to message
+        if ($statusCode === 403 && $apiKeyLength !== null && $apiKeyPreview !== null) {
+            $message .= " [API Key: length={$apiKeyLength}, preview={$apiKeyPreview}]";
+        }
+
         $this->logger->error('Erreur Gemini détectée', [
             'statusCode' => $statusCode,
-            'message' => $message
+            'message' => $message,
+            'apiKey_length' => $apiKeyLength,
+            'apiKey_preview' => $apiKeyPreview
         ]);
 
         throw new GeminiException($message, statusCode: $statusCode);
