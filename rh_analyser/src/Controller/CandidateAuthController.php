@@ -216,9 +216,15 @@ class CandidateAuthController extends AbstractController
             }
 
             // Create uploads directory if not exists
-            $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/cv';
+            // Use var/uploads instead of public/uploads for better permission handling
+            $uploadsDir = $this->getParameter('kernel.project_dir') . '/var/uploads/cv';
             if (!is_dir($uploadsDir)) {
-                mkdir($uploadsDir, 0755, true);
+                try {
+                    mkdir($uploadsDir, 0777, true);
+                } catch (\Exception $e) {
+                    $this->logger->error('Could not create uploads directory: ' . $e->getMessage());
+                    return $this->json(['success' => false, 'message' => 'Erreur serveur: impossible de créer le répertoire'], 500);
+                }
             }
 
             // Generate unique filename
@@ -283,7 +289,7 @@ class CandidateAuthController extends AbstractController
             return $this->redirectToRoute('app_candidate_dashboard');
         }
 
-        $uploadsDir = $this->getParameter('kernel.project_dir') . '/public/uploads/cv';
+        $uploadsDir = $this->getParameter('kernel.project_dir') . '/var/uploads/cv';
         $filePath = $uploadsDir . '/' . $candidate->getCvFileName();
 
         if (!file_exists($filePath)) {
