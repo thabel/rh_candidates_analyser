@@ -12,6 +12,9 @@ use App\Entity\JobDescription;
 use App\Repository\JobDescriptionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use GeminiAPI\Client;
+use GeminiAPI\Resources\ModelName;
+use GeminiAPI\Resources\Parts\TextPart;
 
 class PublicCandidateController extends AbstractController
 {
@@ -37,6 +40,20 @@ class PublicCandidateController extends AbstractController
 
         return $this->render('public/index.html.twig', [
             'job' => $job,
+        ]);
+    }
+
+
+    #[Route('/test', name: 'app_public_test', methods: ['GET'])]
+    public function test(): Response
+    {
+        
+        //  Load environment variable example
+        $text = getenv('TEST_ENV_VARIABLE') ?: 'Variable non définie';
+
+        return $this->render('public/test.html.twig', [
+           
+            'text' => $text,
         ]);
     }
 

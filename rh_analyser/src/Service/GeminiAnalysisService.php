@@ -15,16 +15,22 @@ use Symfony\Component\Cache\CacheItem;
 class GeminiAnalysisService
 {
     private FilesystemAdapter $cache;
+    private string $geminiApiKey;
     private const CACHE_TTL = 86400; // 24 heures
 
     public function __construct(
         private HttpClientInterface $httpClient,
-        private string $geminiApiKey,
+        string $geminiApiKey,
         private string $geminiModel,
         private float $geminiTemperature,
         private int $geminiMaxTokens,
         private LoggerInterface $logger
     ) {
+        $this->geminiApiKey = trim($geminiApiKey);
+        if (empty($this->geminiApiKey)) {
+            throw new \RuntimeException('Missing GEMINI_API_KEY environment variable');
+        }
+
         $this->cache = new FilesystemAdapter('gemini_cache', self::CACHE_TTL);
     }
 
@@ -51,18 +57,12 @@ class GeminiAnalysisService
         $prompt = $this->buildPrompt($jobDescription, $cv);
 
         try {
-            // Debug logging
-            $apiKeyLength = strlen($this->geminiApiKey);
-            $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
-
             $this->logger->info('Appel API Gemini', [
                 'model' => $this->geminiModel,
-                'apiKey_length' => $apiKeyLength,
-                'apiKey_preview' => $apiKeyPreview
+                'maxTokens' => $this->geminiMaxTokens
             ]);
-
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent";
-            $this->logger->info('URL Gemini API', ['url' => $url]);
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+ 
 
             $response = $this->httpClient->request('POST', $url, [
                 'query' => ['key' => $this->geminiApiKey],
@@ -78,8 +78,32 @@ class GeminiAnalysisService
                         'temperature' => $this->geminiTemperature,
                         'topK' => 40,
                         'topP' => 0.95,
-                        'maxOutputTokens' => $this->geminiMaxTokens,
-                        'responseMimeType' => 'application/json'
+                        'maxOutputTokens' => 2048, // Augmenté pour éviter la troncature
+                        'responseMimeType' => 'application/json',
+                        'responseSchema' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'score' => [
+                                    'type' => 'integer',
+                                    'description' => 'Score entre 0 et 100'
+                                ],
+                                'summary' => [
+                                    'type' => 'string',
+                                    'description' => 'Résumé en 1-2 phrases'
+                                ],
+                                'positives' => [
+                                    'type' => 'array',
+                                    'items' => ['type' => 'string'],
+                                    'description' => 'Liste de 4 points positifs'
+                                ],
+                                'negatives' => [
+                                    'type' => 'array',
+                                    'items' => ['type' => 'string'],
+                                    'description' => 'Liste de 3 points négatifs'
+                                ]
+                            ],
+                            'required' => ['score', 'summary', 'positives', 'negatives']
+                        ]
                     ]
                 ],
                 'timeout' => 60
@@ -88,32 +112,60 @@ class GeminiAnalysisService
             $statusCode = $response->getStatusCode();
             $data = $response->toArray();
 
-            // Vérifier les erreurs spécifiques à Gemini
-            if (!$response->getStatusCode() === 200) {
-                $apiKeyLength = strlen($this->geminiApiKey);
-                $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
-                $this->handleGeminiError($statusCode, $data, $apiKeyLength, $apiKeyPreview);
+            $this->logger->info('Réponse Gemini', [
+                'statusCode' => $statusCode,
+                'finishReason' => $data['candidates'][0]['finishReason'] ?? 'unknown',
+                'totalTokens' => $data['usageMetadata']['totalTokenCount'] ?? 0
+            ]);
+
+            // Vérifier le code de statut
+            if ($statusCode !== 200) {
+                $this->handleGeminiError($statusCode, $data);
             }
 
-            // Vérifier si la réponse a été bloquée
-            if (isset($data['candidates'][0]['finishReason']) &&
-                $data['candidates'][0]['finishReason'] === 'SAFETY') {
+            // Vérifier la raison de fin
+            $finishReason = $data['candidates'][0]['finishReason'] ?? null;
+            
+            if ($finishReason === 'MAX_TOKENS') {
+                throw new GeminiException(
+                    'La réponse a été tronquée (limite de tokens atteinte). Essayez de réduire la taille du CV ou de la fiche de poste.',
+                    statusCode: 400
+                );
+            }
+
+            if ($finishReason === 'SAFETY') {
                 throw new GeminiException(
                     'Le contenu a été bloqué par les filtres de sécurité de Gemini',
                     statusCode: 403
                 );
             }
 
-            // Extraire le JSON de la réponse
+            if (!in_array($finishReason, ['STOP', null])) {
+                throw new GeminiException(
+                    "Réponse Gemini incomplète : {$finishReason}",
+                    statusCode: 500
+                );
+            }
+
+            // Extraire le contenu JSON
             if (!isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-                throw new GeminiException('Format de réponse Gemini invalide');
+                $this->logger->error('Structure de réponse invalide', ['data' => $data]);
+                throw new GeminiException('Format de réponse Gemini invalide : pas de contenu texte');
             }
 
             $responseText = $data['candidates'][0]['content']['parts'][0]['text'];
+            
+            // Nettoyer le texte (retirer les markdown code blocks si présents)
+            $responseText = preg_replace('/^```json\s*|\s*```$/m', '', trim($responseText));
+            
             $result = json_decode($responseText, true);
 
-            if (!$result) {
-                throw new GeminiException('Impossible de parser la réponse JSON de Gemini');
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('Erreur parsing JSON', [
+                    'error' => json_last_error_msg(),
+                    'response' => $responseText
+                ]);
+                throw new GeminiException('Impossible de parser la réponse JSON de Gemini: ' . json_last_error_msg());
             }
 
             // Valider la structure de la réponse
@@ -128,17 +180,12 @@ class GeminiAnalysisService
             return $result;
 
         } catch (HttpExceptionInterface $e) {
-            $apiKeyLength = strlen($this->geminiApiKey);
-            $apiKeyPreview = $apiKeyLength > 0 ? substr($this->geminiApiKey, 0, 10) . '...' . substr($this->geminiApiKey, -5) : 'EMPTY';
-
             $this->logger->error('Erreur HTTP Gemini', [
                 'status' => $e->getResponse()->getStatusCode(),
                 'message' => $e->getMessage(),
-                'apiKey_length' => $apiKeyLength,
-                'apiKey_preview' => $apiKeyPreview,
                 'model' => $this->geminiModel
             ]);
-            $this->handleGeminiError($e->getResponse()->getStatusCode(), [], $apiKeyLength, $apiKeyPreview);
+            $this->handleGeminiError($e->getResponse()->getStatusCode(), []);
         } catch (\JsonException $e) {
             throw new GeminiException('Erreur de parsing JSON: ' . $e->getMessage());
         }
@@ -150,8 +197,8 @@ class GeminiAnalysisService
     private function buildPrompt(string $jobDescription, string $cv): string
     {
         return <<<PROMPT
-Tu es un expert RH spécialisé dans l'analyse de candidatures avec une expertise reconnue en recrutement tech.
-Analyse objectivement et professionnellement le CV suivant par rapport à la fiche de poste fournie.
+Tu es un expert RH spécialisé dans l'analyse de candidatures.
+Analyse le CV suivant par rapport à la fiche de poste fournie.
 
 FICHE DE POSTE :
 {$jobDescription}
@@ -159,29 +206,19 @@ FICHE DE POSTE :
 CV DU CANDIDAT :
 {$cv}
 
-Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas de texte supplémentaire, pas de code blocks) avec cette structure exacte :
-{
-  "score": <nombre entier entre 0 et 100>,
-  "summary": "<résumé en 1-2 phrases maximum du candidat par rapport au poste>",
-  "positives": ["point1", "point2", "point3", "point4"],
-  "negatives": ["point1", "point2", "point3"]
-}
+Fournis une analyse avec :
+- score : nombre entier entre 0 et 100
+- summary : résumé en 1-2 phrases du candidat par rapport au poste
+- positives : exactement 4 points forts du candidat
+- negatives : exactement 3 points à améliorer
 
 CRITÈRES DE NOTATION (total 100 points) :
-- Compétences techniques (40 points) : Correspondance directe avec les technologies et outils requis
-- Expérience pertinente (30 points) : Années d'expérience dans un domaine similaire
-- Formation et certifications (15 points) : Diplômes et certifications pertinentes
-- Soft skills et progression (15 points) : Leadership, communication, progression de carrière
+- Compétences techniques (40 points)
+- Expérience pertinente (30 points)
+- Formation et certifications (15 points)
+- Soft skills et progression (15 points)
 
-Instructions strictes :
-1. Le score doit être un nombre entre 0 et 100
-2. La réponse DOIT être du JSON valide (testable avec json_decode)
-3. Fournis EXACTEMENT 4 points positifs et 3 points négatifs
-4. Chaque point doit être concis (1-2 phrases) et facile à comprendre
-5. Sois factuel et basé sur les données du CV et de la fiche de poste
-6. Ne fais jamais de suppositions ; utilise uniquement ce qui est explicitement mentionné
-
-IMPORTANT : Réponds avec UNIQUEMENT le JSON, sans markdown, sans explications supplémentaires.
+Sois concis, factuel et basé uniquement sur les informations fournies.
 PROMPT;
     }
 
@@ -209,15 +246,15 @@ PROMPT;
         return [
             'score' => $score,
             'summary' => trim($response['summary'] ?? 'Analyse complétée'),
-            'positives' => $positives,
-            'negatives' => $negatives
+            'positives' => array_values($positives),
+            'negatives' => array_values($negatives)
         ];
     }
 
     /**
      * Gérer les erreurs spécifiques de Gemini
      */
-    private function handleGeminiError(int $statusCode, array $data, ?int $apiKeyLength = null, ?string $apiKeyPreview = null): void
+    private function handleGeminiError(int $statusCode, array $data): void
     {
         $messages = [
             400 => 'Requête invalide à Gemini (JSON malformé ou données invalides)',
@@ -229,16 +266,15 @@ PROMPT;
 
         $message = $messages[$statusCode] ?? "Erreur Gemini ($statusCode)";
 
-        // Add API key debug info to message
-        if ($statusCode === 403 && $apiKeyLength !== null && $apiKeyPreview !== null) {
-            $message .= " [API Key: length={$apiKeyLength}, preview={$apiKeyPreview}]";
+        // Ajouter les détails de l'erreur si disponibles
+        if (isset($data['error']['message'])) {
+            $message .= ': ' . $data['error']['message'];
         }
 
         $this->logger->error('Erreur Gemini détectée', [
             'statusCode' => $statusCode,
             'message' => $message,
-            'apiKey_length' => $apiKeyLength,
-            'apiKey_preview' => $apiKeyPreview
+            'errorData' => $data['error'] ?? null
         ]);
 
         throw new GeminiException($message, statusCode: $statusCode);
