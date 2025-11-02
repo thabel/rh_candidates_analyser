@@ -515,8 +515,7 @@
         let pageRendering = false;
         let pageNumPending = null;
 
-        const cvFileName = "{{ candidate.cvFileName }}";
-        const pdfUrl = "/var/uploads/cv/" + cvFileName;
+        const pdfUrl = "{{ path('app_candidate_view_cv', {id: candidate.id}) }}";
 
         pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
             pdfDoc = pdf;

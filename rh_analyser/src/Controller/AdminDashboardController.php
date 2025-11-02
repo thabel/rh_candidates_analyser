@@ -68,7 +68,7 @@ class AdminDashboardController extends AbstractController
     }
 
     /**
-     * Tableau de bord principal - groupé par offre d'emploi
+     * Tableau de bord principal - 2 vues: offres -> candidats
      */
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function dashboard(Request $request): Response
@@ -77,50 +77,74 @@ class AdminDashboardController extends AbstractController
         if ($auth) return $auth;
 
         $jobId = $request->query->get('job');
-        $filter = $request->query->get('filter', 'all'); // all, analyzed, pending
+        $filter = $request->query->get('filter', 'all');
 
         // Get all active jobs
         $jobs = $this->entityManager->getRepository(JobDescription::class)
             ->findBy(['isActive' => true]);
 
-        // Group candidates by job
-        $candidatesByJob = [];
+        // Calculate stats for all jobs
+        $jobStats = [];
         foreach ($jobs as $job) {
-            $candidates = $this->entityManager->getRepository(Candidate::class)
+            $allJobCandidates = $this->entityManager->getRepository(Candidate::class)
                 ->findBy(['jobDescription' => $job]);
 
-            // Apply filter
-            if ($filter === 'analyzed') {
-                $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed');
-            } elseif ($filter === 'pending') {
-                $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'pending');
-            }
-
-            if (!empty($candidates)) {
-                $candidatesByJob[$job->getId()] = [
-                    'job' => $job,
-                    'candidates' => $candidates,
-                    'total' => count($candidates),
-                    'analyzed' => count(array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed')),
-                    'pending' => count(array_filter($candidates, fn($c) => $c->getStatus() === 'pending')),
-                ];
-            }
+            $jobStats[$job->getId()] = [
+                'total' => count($allJobCandidates),
+                'pending' => count(array_filter($allJobCandidates, fn($c) => $c->getStatus() === 'pending')),
+                'analyzed' => count(array_filter($allJobCandidates, fn($c) => $c->getStatus() === 'analyzed')),
+            ];
         }
 
-        // Calculate totals
+        // Get totals for all candidates
         $allCandidates = $this->entityManager->getRepository(Candidate::class)->findAll();
         $totalCandidates = count($allCandidates);
         $totalAnalyzed = count(array_filter($allCandidates, fn($c) => $c->getStatus() === 'analyzed'));
         $totalPending = count(array_filter($allCandidates, fn($c) => $c->getStatus() === 'pending'));
 
+        $candidatesByJob = [];
+        $currentJob = null;
+        $jobPendingCount = 0;
+        $jobAnalyzedCount = 0;
+        $totalJobCandidates = 0;
+
+        // If a job is selected, get its candidates
+        if ($jobId) {
+            $currentJob = $this->entityManager->getRepository(JobDescription::class)->find($jobId);
+
+            if ($currentJob) {
+                $candidates = $this->entityManager->getRepository(Candidate::class)
+                    ->findBy(['jobDescription' => $currentJob]);
+
+                // Count stats before filtering
+                $jobPendingCount = count(array_filter($candidates, fn($c) => $c->getStatus() === 'pending'));
+                $jobAnalyzedCount = count(array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed'));
+                $totalJobCandidates = count($candidates);
+
+                // Apply filter
+                if ($filter === 'analyzed') {
+                    $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'analyzed');
+                } elseif ($filter === 'pending') {
+                    $candidates = array_filter($candidates, fn($c) => $c->getStatus() === 'pending');
+                }
+
+                $candidatesByJob = array_values($candidates);
+            }
+        }
+
         return $this->render('admin/dashboard.html.twig', [
-            'candidatesByJob' => $candidatesByJob,
             'jobs' => $jobs,
+            'jobStats' => $jobStats,
+            'candidatesByJob' => $candidatesByJob,
+            'currentJob' => $currentJob,
+            'selectedJobId' => $jobId,
+            'currentFilter' => $filter,
             'totalCandidates' => $totalCandidates,
             'totalAnalyzed' => $totalAnalyzed,
             'totalPending' => $totalPending,
-            'currentFilter' => $filter,
-            'selectedJobId' => $jobId,
+            'jobPendingCount' => $jobPendingCount,
+            'jobAnalyzedCount' => $jobAnalyzedCount,
+            'totalJobCandidates' => $totalJobCandidates,
         ]);
     }
 

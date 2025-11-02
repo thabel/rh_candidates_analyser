@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
 use App\Entity\Candidate;
@@ -324,27 +325,62 @@ class CandidateAuthController extends AbstractController
     }
 
     /**
+     * Serve CV PDF for viewing (accessible from admin and candidate)
+     */
+    #[Route('/cv/{id}', name: 'app_candidate_view_cv', methods: ['GET'])]
+    public function viewCv(string $id, Request $request): Response
+    {
+        $session = $request->getSession();
+        $isAdmin = $request->getSession()->has('admin_logged_in');
+        $isCandidate = $session->has('candidate_id') && $session->get('candidate_id') === $id;
+
+        // Only admin or the candidate themselves can view
+        if (!$isAdmin && !$isCandidate) {
+            return new Response('Unauthorized', 403);
+        }
+
+        $candidate = $this->entityManager->getRepository(Candidate::class)->find($id);
+
+        if (!$candidate || !$candidate->getCvFileName()) {
+            return new Response('CV not found', 404);
+        }
+
+        $uploadsDir = $this->getParameter('kernel.project_dir') . '/var/uploads/cv';
+        $filePath = $uploadsDir . '/' . $candidate->getCvFileName();
+
+        if (!file_exists($filePath)) {
+            return new Response('File not found', 404);
+        }
+
+        $response = new BinaryFileResponse($filePath);
+        $response->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_INLINE, $candidate->getCvFileName());
+        return $response;
+    }
+
+    /**
      * Download CV PDF
      */
     #[Route('/download-cv/{id}', name: 'app_candidate_download_cv', methods: ['GET'])]
     public function downloadCv(string $id, Request $request): Response
     {
         $session = $request->getSession();
-        if (!$session->has('candidate_id')) {
-            return $this->redirectToRoute('app_candidate_login');
-        }
+        $isAdmin = $request->getSession()->has('admin_logged_in');
+        $isCandidate = $session->has('candidate_id') && $session->get('candidate_id') === $id;
 
-        // Ensure candidate can only download their own CV
-        if ($session->get('candidate_id') !== $id) {
+        // Only admin or the candidate themselves can download
+        if (!$isAdmin && !$isCandidate) {
             $this->addFlash('error', 'Accès non autorisé');
-            return $this->redirectToRoute('app_candidate_dashboard');
+            return $this->redirectToRoute('app_public_home');
         }
 
         $candidate = $this->entityManager->getRepository(Candidate::class)->find($id);
 
         if (!$candidate || !$candidate->getCvFileName()) {
             $this->addFlash('error', 'CV non trouvé');
-            return $this->redirectToRoute('app_candidate_dashboard');
+            if ($isCandidate) {
+                return $this->redirectToRoute('app_candidate_dashboard');
+            }
+            return $this->redirectToRoute('admin_dashboard');
         }
 
         $uploadsDir = $this->getParameter('kernel.project_dir') . '/var/uploads/cv';
@@ -352,7 +388,10 @@ class CandidateAuthController extends AbstractController
 
         if (!file_exists($filePath)) {
             $this->addFlash('error', 'Fichier non trouvé');
-            return $this->redirectToRoute('app_candidate_dashboard');
+            if ($isCandidate) {
+                return $this->redirectToRoute('app_candidate_dashboard');
+            }
+            return $this->redirectToRoute('admin_dashboard');
         }
 
         return $this->file($filePath);
