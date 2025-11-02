@@ -44,6 +44,10 @@ class GeminiAnalysisService
      */
     public function analyzeCandidate(string $jobDescription, string $cv): array
     {
+        // Limiter la taille du CV et de la fiche de poste pour éviter MAX_TOKENS
+        $cv = $this->truncateText($cv, 4000);
+        $jobDescription = $this->truncateText($jobDescription, 2000);
+
         // Générer une clé de cache basée sur les inputs
         $cacheKey = hash('sha256', $jobDescription . '::' . $cv);
 
@@ -78,7 +82,7 @@ class GeminiAnalysisService
                         'temperature' => $this->geminiTemperature,
                         'topK' => 40,
                         'topP' => 0.95,
-                        'maxOutputTokens' => 2048, // Augmenté pour éviter la troncature
+                        'maxOutputTokens' => 3000, // Augmenté pour éviter la troncature
                         'responseMimeType' => 'application/json',
                         'responseSchema' => [
                             'type' => 'object',
@@ -189,6 +193,35 @@ class GeminiAnalysisService
         } catch (\JsonException $e) {
             throw new GeminiException('Erreur de parsing JSON: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Tronque le texte à une longueur maximale
+     *
+     * @param string $text Texte à tronquer
+     * @param int $maxLength Longueur maximale en caractères
+     * @return string Texte tronqué
+     */
+    private function truncateText(string $text, int $maxLength): string
+    {
+        if (strlen($text) <= $maxLength) {
+            return $text;
+        }
+
+        $truncated = substr($text, 0, $maxLength);
+        // Essayer de tronquer au dernier espace pour éviter de couper un mot
+        $lastSpace = strrpos($truncated, ' ');
+        if ($lastSpace !== false && $lastSpace > $maxLength * 0.8) {
+            $truncated = substr($truncated, 0, $lastSpace);
+        }
+
+        $this->logger->warning('Texte tronqué pour Gemini', [
+            'originalLength' => strlen($text),
+            'truncatedLength' => strlen($truncated),
+            'maxLength' => $maxLength
+        ]);
+
+        return $truncated . "\n[... texte tronqué pour optimisation ...]";
     }
 
     /**
