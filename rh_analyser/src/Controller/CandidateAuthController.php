@@ -255,7 +255,7 @@ class CandidateAuthController extends AbstractController
     }
 
     /**
-     * Upload CV PDF
+     * Upload CV PDF (initial or re-upload)
      */
     #[Route('/upload-cv', name: 'app_candidate_upload_cv', methods: ['POST'])]
     public function uploadCv(Request $request): Response
@@ -299,6 +299,22 @@ class CandidateAuthController extends AbstractController
                 }
             }
 
+            // Delete old CV file if exists (on re-upload)
+            if ($candidate->getCvFileName()) {
+                $oldFilePath = $uploadsDir . '/' . $candidate->getCvFileName();
+                if (file_exists($oldFilePath)) {
+                    try {
+                        unlink($oldFilePath);
+                        $this->logger->info('Ancien CV supprimé', [
+                            'candidate_id' => $candidateId,
+                            'filename' => $candidate->getCvFileName()
+                        ]);
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Could not delete old CV file: ' . $e->getMessage());
+                    }
+                }
+            }
+
             // Generate unique filename
             $originalFileName = $cvFile->getClientOriginalName();
             $fileName = $candidate->getId() . '_' . time() . '_' . pathinfo($originalFileName, PATHINFO_FILENAME) . '.pdf';
@@ -323,9 +339,13 @@ class CandidateAuthController extends AbstractController
             }
 
             // Update candidate
+            // On re-upload, reset analysis so it needs to be re-analyzed
             $candidate->setCvFileName($fileName);
             $candidate->setCvText($cvText);
             $candidate->setStatus('pending');
+            $candidate->setScore(null);
+            $candidate->setAnalysisResult(null);
+            $candidate->setAnalyzedAt(null);
 
             $this->entityManager->persist($candidate);
             $this->entityManager->flush();
@@ -333,7 +353,8 @@ class CandidateAuthController extends AbstractController
             $this->logger->info('CV téléchargé et traité', [
                 'candidate_id' => $candidateId,
                 'filename' => $fileName,
-                'cv_text_length' => strlen($cvText)
+                'cv_text_length' => strlen($cvText),
+                'is_reupload' => $candidate->getStatus() === 'pending'
             ]);
 
             return $this->json([

@@ -117,6 +117,7 @@ class CandidateSubmissionController extends AbstractController
 
     /**
      * Récupère une candidature par ID (pour le candidat)
+     * Note: Le score n'est PAS exposé au candidat, seulement le statut pass/fail
      */
     #[Route('/api/candidate/{id}', name: 'api_get_candidate', methods: ['GET'])]
     public function getCandidate(string $id): JsonResponse
@@ -132,16 +133,22 @@ class CandidateSubmissionController extends AbstractController
                 );
             }
 
+            // Déterminer le statut de passage (caché au candidat, visible pour l'affichage)
+            $analysisStatus = null;
+            if ($candidate->isAnalyzed()) {
+                $analysisStatus = $candidate->hasPassedAnalysis() ? 'passed' : 'failed';
+            }
+
             return $this->json([
                 'id' => $candidate->getId()->toString(),
                 'firstName' => $candidate->getFirstName(),
                 'lastName' => $candidate->getLastName(),
                 'email' => $candidate->getEmail(),
                 'status' => $candidate->getStatus(),
+                'analysisStatus' => $analysisStatus, // 'passed', 'failed', ou null si pas encore analysé
                 'submittedAt' => $candidate->getSubmittedAt()->format('Y-m-d H:i:s'),
-                'score' => $candidate->getScore(),
-                'analysis' => $candidate->getAnalysisResult(),
-                'analyzedAt' => $candidate->getAnalyzedAt()?->format('Y-m-d H:i:s')
+                'analyzedAt' => $candidate->getAnalyzedAt()?->format('Y-m-d H:i:s'),
+                // Note: score et analysis ne sont pas exposés au candidat
             ], JsonResponse::HTTP_OK);
 
         } catch (\Exception $e) {

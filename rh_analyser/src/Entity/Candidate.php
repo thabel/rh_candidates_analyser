@@ -301,4 +301,21 @@ class Candidate
         $this->jobDescription = $jobDescription;
         return $this;
     }
+
+    /**
+     * Vérifie si le candidat a passé l'analyse (score >= 70)
+     * Seuil de passage défini à 70/100
+     */
+    public function hasPassedAnalysis(): bool
+    {
+        return $this->status === 'analyzed' && $this->score !== null && $this->score >= 70;
+    }
+
+    /**
+     * Vérifie si l'analyse est complétée
+     */
+    public function isAnalyzed(): bool
+    {
+        return $this->status === 'analyzed' && $this->score !== null;
+    }
 }
