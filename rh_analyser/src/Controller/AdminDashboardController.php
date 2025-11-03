@@ -194,7 +194,7 @@ class AdminDashboardController extends AbstractController
             $this->entityManager->flush();
 
             $jobDescription = $candidate->getJobDescription()->getDescription();
-            $cvText = $candidate->getCvFileName() ?? '';
+            $cvText = $candidate->getCvText() ?? '';
 
             $this->logger->info('Analyse lancée', ['candidateId' => $id]);
 
@@ -264,7 +264,7 @@ class AdminDashboardController extends AbstractController
                 $this->entityManager->flush();
 
                 $jobDescription = $job->getDescription();
-                $cvText = $candidate->getCvFileName() ?? '';
+                $cvText = $candidate->getCvText() ?? '';
 
                 $result = $this->geminiService->analyzeCandidate($jobDescription, $cvText);
 

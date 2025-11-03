@@ -183,9 +183,20 @@ class AdminCandidateController extends AbstractController
             ]);
 
             try {
+                $cvTextToAnalyze = $candidate->getCvText();
+
+                // DEBUG: Log what we're actually sending to Gemini
+                $this->logger->warning('DEBUG - CV avant analyse', [
+                    'candidateId' => $candidate->getId(),
+                    'cvLength' => strlen($cvTextToAnalyze ?? ''),
+                    'cvPreview' => substr($cvTextToAnalyze ?? '', 0, 100),
+                    'cvFileName' => $candidate->getCvFileName(),
+                    'isNullOrEmpty' => empty($cvTextToAnalyze)
+                ]);
+
                 $analysisResult = $this->geminiService->analyzeCandidate(
                     $jobDescription,
-                    $candidate->getCvText()
+                    $cvTextToAnalyze
                 );
 
                 // Mettre à jour la candidature avec les résultats
